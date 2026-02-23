@@ -1,4 +1,4 @@
-# 🏭 WarehouseManagamentsSystem — System Class Diagram
+# 🏭 WarehouseManagamentSystem — System Class Diagram
 
 > Full class diagram for the WarehouseHub platform covering all roles, entities, relationships, and enumerations.
 
