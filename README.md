@@ -124,7 +124,7 @@ Warehouse inventory auto-updated ✅
 | Layer | Technology |
 |-------|------------|
 | **Frontend** | React / Next.js |
-| **Backend** | Node.js / NestJS or Django |
+| **Backend** | Java / SpringBoot |
 | **Database** | PostgreSQL |
 | **Auth** | JWT + Role-based middleware |
 | **Real-time** | WebSockets / Firebase |
@@ -137,7 +137,7 @@ Warehouse inventory auto-updated ✅
 
 ### Prerequisites
 
-- Node.js >= 18
+- Java >= 18
 - PostgreSQL >= 14
 - Docker (optional but recommended)
 
