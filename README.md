@@ -14,7 +14,7 @@ Built as a microservices architecture with 7 independently deployable Spring Boo
 | **Service Discovery** | Spring Cloud Netflix Eureka |
 | **Config** | Spring Cloud Config Server |
 | **Gateway** | Spring Cloud Gateway |
-| **Cache** | Redis 7 (booking availability locks) |
+| **Cache** | Redis (booking availability locks) |
 | **Payments** | Stripe (Checkout + Webhooks) |
 | **Tracing** | Micrometer Tracing + Zipkin |
 | **Batch** | Spring Batch 5 + Quartz |
