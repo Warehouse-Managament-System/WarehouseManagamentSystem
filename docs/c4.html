@@ -1048,7 +1048,7 @@
                   <span class="n-type">Container — Databases</span>
                   <span class="n-name">PostgreSQL (per service)</span>
                   <span class="n-desc">Each microservice has its own PostgreSQL database. No shared database access. Each DB includes an outbox_events table for the Transactional Outbox pattern.</span>
-                  <span class="n-tech">PostgreSQL 15 &middot; 7 databases</span>
+                  <span class="n-tech">PostgreSQL 18 &middot; 7 databases</span>
                 </div>
 
                 <div class="node-card kafka-card">
@@ -1056,7 +1056,7 @@
                   <span class="n-type">Container — Message Broker</span>
                   <span class="n-name">Apache Kafka</span>
                   <span class="n-desc">Async event bus. Events are never published directly — they flow through the Transactional Outbox pattern. Dead Letter Topics (DLT) capture failed messages. All consumers are idempotent.</span>
-                  <span class="n-tech">Kafka 3 &middot; Port 9092</span>
+                  <span class="n-tech">Kafka 4 &middot; Port 9092</span>
                 </div>
 
                 <div class="node-card container-card">
@@ -1064,7 +1064,7 @@
                   <span class="n-type">Container — Cache</span>
                   <span class="n-name">Redis</span>
                   <span class="n-desc">Used by Booking Service for room availability locks to prevent double-booking on concurrent requests.</span>
-                  <span class="n-tech">Redis 7 &middot; Port 6379</span>
+                  <span class="n-tech">Redis 8 &middot; Port 6379</span>
                 </div>
 
               </div>
@@ -1391,7 +1391,7 @@
         <span class="ci-name" style="color:var(--batch-text);">Scheduler</span>
         <span class="ci-desc">Spring Batch jobs running on schedule. Booking expiry detection and overdue invoice marking. Fires Kafka events after processing.</span>
         <span class="ci-endpoints">Nightly: booking-expiry-job<br>Daily 8AM: overdue-invoice-job</span>
-        <span class="ci-tech" style="background:white;">Spring Batch 5 &middot; Quartz</span>
+        <span class="ci-tech" style="background:white;">Spring Batch 6 &middot; Quartz</span>
       </div>
 
     </div>

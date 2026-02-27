@@ -14,10 +14,10 @@ Built as a microservices architecture with 7 independently deployable Spring Boo
 | **Service Discovery** | Spring Cloud Netflix Eureka |
 | **Config** | Spring Cloud Config Server |
 | **Gateway** | Spring Cloud Gateway |
-| **Cache** | Redis (booking availability locks) |
+| **Cache** | Redis 8 (booking availability locks) |
 | **Payments** | Stripe (Checkout + Webhooks) |
 | **Tracing** | Micrometer Tracing + Zipkin |
-| **Batch** | Spring Batch 5 + Quartz |
+| **Batch** | Spring Batch 6 + Quartz |
 
 ## Services
 
@@ -63,12 +63,12 @@ Full architecture documentation is hosted as an HTML site via **GitHub Pages**:
 | Layer | Technology |
 |---|---|
 | Language | Java 25 |
-| Framework | Spring Boot 4, Spring Cloud |
+| Framework | Spring Boot 4, Spring Cloud 2025.x |
 | Build | Gradle (Kotlin DSL) |
-| Database | PostgreSQL, Spring Data JPA, Flyway |
-| Messaging | Apache Kafka, Spring Kafka, Debezium CDC |
-| Cache | Redis, Spring Data Redis |
-| Security | Spring Security, JWT (jjwt) |
+| Database | PostgreSQL 18, Spring Data JPA, Flyway |
+| Messaging | Apache Kafka 4, Spring Kafka, Debezium CDC |
+| Cache | Redis 8, Spring Data Redis |
+| Security | Spring Security 7, JWT (jjwt) |
 | Payments | Stripe Java SDK |
 | Excel | Apache POI |
 | Resilience | Resilience4j (circuit breaker, retry, time limiter) |
@@ -82,7 +82,7 @@ Full architecture documentation is hosted as an HTML site via **GitHub Pages**:
 
 - Java 25+
 - Docker and Docker Compose
-- Gradle 8+ (or use the included wrapper)
+- Gradle 9+ (or use the included wrapper)
 
 ### Run
 
