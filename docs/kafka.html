@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WMS — Kafka Event Catalog</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <a href="index.html">Overview</a>
+  <a href="c4.html">C4 Architecture</a>
+  <a href="database.html">Database</a>
+  <a href="api.html">API</a>
+  <a href="kafka.html" class="active">Kafka Events</a>
+</nav>
+
+<div class="site-header">
+  <span class="tag">ASYNC COMMUNICATION</span>
+  <h1>Kafka <span>Event Catalog</span></h1>
+  <p>All inter-service async communication flows through Apache Kafka. Events are never published directly from application code. Instead, they are written to the outbox_events table in the same database transaction as the business data (Transactional Outbox pattern), then Debezium CDC reads the outbox and publishes to Kafka.</p>
+</div>
+
+<div class="page-content">
+
+  <!-- Event Flow -->
+  <div class="section">
+    <div class="section-title">Event Flow</div>
+    <div class="flow-box">
+      <pre>
+Service writes business data + outbox event (same DB transaction)
+    |
+    v
+Debezium CDC watches outbox_events table via PostgreSQL WAL
+    |
+    v
+Debezium publishes event to Kafka topic
+    |
+    v
+Consumer(s) process event (idempotent — check if already handled)
+    |
+    v (on failure after 3 retries)
+Dead Letter Topic (topic-name.DLT)
+      </pre>
+    </div>
+    <div class="info-grid">
+      <div class="info-box">
+        <h4>WHY TRANSACTIONAL OUTBOX</h4>
+        <p>Guarantees that business data and events are always consistent. If the DB transaction succeeds, the event will eventually be published. No dual-write problem. No lost events.</p>
+      </div>
+      <div class="info-box">
+        <h4>IDEMPOTENT CONSUMERS</h4>
+        <p>Every consumer checks if it has already processed a message before acting on it. This handles duplicate deliveries from Kafka retries or Debezium replays safely.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Booking Events -->
+  <div class="section">
+    <div class="section-title">Booking Events</div>
+    <div class="kafka-grid">
+      <div class="kafka-event">
+        <span class="ke-topic">booking.confirmed</span>
+        <span class="ke-flow"><strong>Producer:</strong> Booking Service<br><strong>Consumers:</strong> Billing (generate invoice), Platform (notify customer + owner)<br><strong>Trigger:</strong> Owner confirms a pending booking</span>
+      </div>
+      <div class="kafka-event">
+        <span class="ke-topic">booking.cancelled</span>
+        <span class="ke-flow"><strong>Producer:</strong> Booking Service<br><strong>Consumers:</strong> Warehouse (release room), Platform (notify customer + owner)<br><strong>Trigger:</strong> Customer or owner cancels booking</span>
+      </div>
+      <div class="kafka-event">
+        <span class="ke-topic">booking.expiry.soon</span>
+        <span class="ke-flow"><strong>Producer:</strong> Platform (Scheduler)<br><strong>Consumers:</strong> Platform (email customer 7 days before expiry)<br><strong>Trigger:</strong> Nightly batch job detects bookings expiring within 7 days</span>
+      </div>
+      <div class="kafka-event">
+        <span class="ke-topic">booking.expired</span>
+        <span class="ke-flow"><strong>Producer:</strong> Platform (Scheduler)<br><strong>Consumers:</strong> Warehouse (release room), Booking (update status), Platform (notify)<br><strong>Trigger:</strong> Nightly batch job detects past-due bookings</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Goods Events -->
+  <div class="section">
+    <div class="section-title">Goods Events</div>
+    <div class="kafka-grid">
+      <div class="kafka-event">
+        <span class="ke-topic">goods.import.pending</span>
+        <span class="ke-flow"><strong>Producer:</strong> Goods Service<br><strong>Consumers:</strong> Platform (notify owner to approve)<br><strong>Trigger:</strong> Customer uploads goods Excel</span>
+      </div>
+      <div class="kafka-event">
+        <span class="ke-topic">goods.approved</span>
+        <span class="ke-flow"><strong>Producer:</strong> Goods Service<br><strong>Consumers:</strong> Platform (email customer with arrival deadline)<br><strong>Trigger:</strong> Owner approves goods import</span>
+      </div>
+      <div class="kafka-event">
+        <span class="ke-topic">goods.rejected</span>
+        <span class="ke-flow"><strong>Producer:</strong> Goods Service<br><strong>Consumers:</strong> Platform (email customer with reason)<br><strong>Trigger:</strong> Owner rejects goods import</span>
+      </div>
+      <div class="kafka-event">
+        <span class="ke-topic">goods.discrepancy</span>
+        <span class="ke-flow"><strong>Producer:</strong> Goods Service<br><strong>Consumers:</strong> Platform (email customer about qty mismatch)<br><strong>Trigger:</strong> Staff receives goods with quantity &ne; expected</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delivery Events -->
+  <div class="section">
+    <div class="section-title">Delivery Events</div>
+    <div class="kafka-grid">
+      <div class="kafka-event">
+        <span class="ke-topic">delivery.ready</span>
+        <span class="ke-flow"><strong>Producer:</strong> Delivery Service<br><strong>Consumers:</strong> Platform (broadcast to all available agents)<br><strong>Trigger:</strong> Staff finishes picking and notifies agents</span>
+      </div>
+      <div class="kafka-event">
+        <span class="ke-topic">delivery.claimed</span>
+        <span class="ke-flow"><strong>Producer:</strong> Delivery Service<br><strong>Consumers:</strong> Platform (email customer with agent info)<br><strong>Trigger:</strong> Delivery agent claims the delivery</span>
+      </div>
+      <div class="kafka-event">
+        <span class="ke-topic">delivery.checkpoint</span>
+        <span class="ke-flow"><strong>Producer:</strong> Delivery Service<br><strong>Consumers:</strong> Platform (email customer with status update)<br><strong>Trigger:</strong> Agent adds shipment checkpoint</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Billing Events -->
+  <div class="section">
+    <div class="section-title">Billing Events</div>
+    <div class="kafka-grid">
+      <div class="kafka-event">
+        <span class="ke-topic">invoice.generated</span>
+        <span class="ke-flow"><strong>Producer:</strong> Billing Service<br><strong>Consumers:</strong> Platform (email customer with payment link)<br><strong>Trigger:</strong> Invoice created after booking.confirmed</span>
+      </div>
+      <div class="kafka-event">
+        <span class="ke-topic">payment.success</span>
+        <span class="ke-flow"><strong>Producer:</strong> Billing Service<br><strong>Consumers:</strong> Booking (activate booking), Platform (email receipt)<br><strong>Trigger:</strong> Stripe webhook confirms payment</span>
+      </div>
+      <div class="kafka-event">
+        <span class="ke-topic">payment.failed</span>
+        <span class="ke-flow"><strong>Producer:</strong> Billing Service<br><strong>Consumers:</strong> Platform (email customer with failure reason)<br><strong>Trigger:</strong> Stripe webhook reports payment failure</span>
+      </div>
+      <div class="kafka-event">
+        <span class="ke-topic">invoice.overdue</span>
+        <span class="ke-flow"><strong>Producer:</strong> Platform (Scheduler)<br><strong>Consumers:</strong> Billing (mark invoice overdue), Platform (notify customer + owner)<br><strong>Trigger:</strong> Daily batch job detects past-due invoices</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Identity Events -->
+  <div class="section">
+    <div class="section-title">Identity Events</div>
+    <div class="kafka-grid" style="grid-template-columns: 1fr;">
+      <div class="kafka-event">
+        <span class="ke-topic">owner.approved / owner.rejected</span>
+        <span class="ke-flow"><strong>Producer:</strong> Identity Service<br><strong>Consumers:</strong> Platform (email owner — account approved/rejected with reason)<br><strong>Trigger:</strong> Super Admin approves or rejects warehouse owner</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payload Contract -->
+  <div class="section">
+    <div class="section-title">Event Payload Contract</div>
+    <div class="explanation">
+      All events use JSON. The payload structure is defined in <strong>wms-common</strong> shared library as Java records/classes. Every event written to the <code>outbox_events</code> table follows this standard envelope.
+    </div>
+    <div class="flow-box">
+      <pre>
+{
+  "aggregate_type": "Booking",
+  "aggregate_id": "550e8400-e29b-41d4-a716-446655440000",
+  "event_type": "booking.confirmed",
+  "payload": {
+    "bookingId": "550e8400-e29b-41d4-a716-446655440000",
+    "customerId": "...",
+    "warehouseId": "...",
+    "roomId": "...",
+    "startDate": "2026-03-01",
+    "endDate": "2026-06-01",
+    "totalPrice": 15000.00,
+    "confirmedAt": "2026-02-25T14:30:00Z"
+  }
+}
+      </pre>
+    </div>
+    <div class="explanation">
+      <strong>Partition Key Strategy:</strong> All events use the <code>aggregate_id</code> as the Kafka partition key. This guarantees that all events for the same entity (e.g., the same booking) are processed in order.
+    </div>
+  </div>
+
+  <!-- Dead Letter Topics -->
+  <div class="section">
+    <div class="section-title">Dead Letter Topics</div>
+    <div class="explanation">
+      When a consumer fails to process a message after <strong>3 retry attempts</strong> (with 1-second backoff), the message is published to the corresponding DLT. DLT messages retain the original headers (including trace ID) for debugging.
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Original Topic</th><th>&rarr;</th><th>Dead Letter Topic</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">booking.confirmed</td><td>&rarr;</td><td class="mono">booking.confirmed.DLT</td></tr>
+        <tr><td class="mono">payment.success</td><td>&rarr;</td><td class="mono">payment.success.DLT</td></tr>
+        <tr><td class="mono"><em>(all topics)</em></td><td>&rarr;</td><td class="mono">{topic-name}.DLT</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Consumer Groups -->
+  <div class="section">
+    <div class="section-title">Consumer Groups</div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Consumer Group</th><th>Service</th><th>Topics Consumed</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">billing-service</td><td>Billing Service</td><td class="desc">booking.confirmed, invoice.overdue</td></tr>
+        <tr><td class="mono">booking-service</td><td>Booking Service</td><td class="desc">payment.success, booking.expired</td></tr>
+        <tr><td class="mono">warehouse-service</td><td>Warehouse Service</td><td class="desc">booking.cancelled, booking.expired</td></tr>
+        <tr><td class="mono">platform-notifications</td><td>Platform Service</td><td class="desc">ALL topics (notifications + email)</td></tr>
+        <tr><td class="mono">platform-audit</td><td>Platform Service</td><td class="desc">ALL topics (audit logging)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+</body>
+</html>

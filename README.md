@@ -1,205 +1,125 @@
-# 🏭 WarehouseManagamentSystem — Smart Warehouse Rental & Logistics Platform
+# Warehouse Management System
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Status-In%20Development-yellow?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/PRs-Welcome-brightgreen?style=for-the-badge" />
-</p>
+A B2B SaaS platform for warehouse space rental and logistics. Warehouse owners list storage facilities with configurable zones and rooms. Business customers browse, book space, store goods, and request deliveries.
 
-> A full-stack platform that connects **Warehouse Owners**, **Customers**, **Staff Workers**, and **Delivery Agents** in a seamless supply chain ecosystem — from renting storage space to delivering goods to their final destination.
+Built as a microservices architecture with 7 independently deployable Spring Boot services, event-driven communication via Apache Kafka, and database-per-service isolation.
 
----
+## Architecture
 
-## 📖 Table of Contents
+| | |
+|---|---|
+| **Style** | Microservices (7 services) |
+| **Communication** | Kafka (async events via Transactional Outbox + Debezium CDC) + REST/HTTP (sync queries via OpenFeign + Resilience4j) |
+| **Databases** | PostgreSQL (one per service) |
+| **Service Discovery** | Spring Cloud Netflix Eureka |
+| **Config** | Spring Cloud Config Server |
+| **Gateway** | Spring Cloud Gateway |
+| **Cache** | Redis 7 (booking availability locks) |
+| **Payments** | Stripe (Checkout + Webhooks) |
+| **Tracing** | Micrometer Tracing + Zipkin |
+| **Batch** | Spring Batch 5 + Quartz |
 
-- [Overview](#-overview)
-- [User Roles](#-user-roles)
-- [Core Features](#-core-features)
-- [System Flow](#-system-flow)
-- [Tech Stack](#-tech-stack)
-- [Getting Started](#-getting-started)
-- [API Documentation](#-api-documentation)
-- [Contributing](#-contributing)
-- [License](#-license)
+## Services
 
----
+| Service | Port | Database | Responsibilities |
+|---|---|---|---|
+| **Identity Service** | 8081 | identity_db | Auth, JWT, users, all profile types, Super Admin ops |
+| **Warehouse Service** | 8082 | warehouse_db | Warehouses, zones, rooms, categories, Excel import |
+| **Booking Service** | 8083 | booking_db | Booking lifecycle, availability checks via Redis |
+| **Goods Service** | 8084 | goods_db | Goods Excel import, items, receipts, discrepancy handling |
+| **Delivery Service** | 8085 | delivery_db | Delivery requests, picking, shipments, checkpoints |
+| **Billing Service** | 8086 | billing_db | Invoices, Stripe payments, credit notes |
+| **Platform Service** | 8087 | platform_db | Notifications, audit logs, scheduled batch jobs |
 
-## 🌐 Overview
+Infrastructure: API Gateway (8080), Eureka (8761), Config Server (8888), Zipkin (9411).
 
-**WarehouseHub** solves the fragmented warehouse rental and logistics market by providing a single platform where:
-
-- Warehouse owners can **monetize their space** by publishing and renting it out.
-- Customers can **rent storage**, track goods, and manage inventory in real time.
-- Staff workers can **process orders** and coordinate packaging.
-- Delivery agents can **accept and complete deliveries**, with automatic inventory updates on completion.
-
----
-
-## 👥 User Roles
-
-The platform supports **4 distinct roles**, chosen by the user at registration:
+## User Roles
 
 | Role | Description |
-|------|-------------|
-| 🏢 **Warehouse Owner** | Lists warehouses, defines zones/rooms, sets pricing per m² and good category |
-| 🛍️ **Customer** | Rents warehouse space, manages stored goods, and places delivery orders |
-| 👷 **Staff Worker** | Processes incoming orders, packages goods, and notifies delivery agents |
-| 🚚 **Delivery Agent** | Accepts delivery tasks and delivers goods to specified destinations |
+|---|---|
+| **Super Admin** | Reviews and approves warehouse owner registrations, manages platform-level access |
+| **Warehouse Owner** | Registers warehouses, configures zones/rooms via Excel import, manages staff and delivery agents, approves bookings and goods |
+| **Customer** | Browses warehouses, books storage space, uploads goods lists, requests deliveries, pays invoices |
+| **Staff** | Receives goods at warehouse, picks and packs orders, notifies delivery agents |
+| **Delivery Agent** | Claims deliveries (first-come-first-served), picks up goods, updates shipment checkpoints |
 
----
+## Documentation
 
-## ✨ Core Features
+Full architecture documentation is hosted as an HTML site via **GitHub Pages**:
 
-### 🔐 Authentication & Authorization
-- Secure user **registration and login**
-- **Role-based access control (RBAC)** — each role sees only its relevant dashboard and actions
-- JWT-based session management
+**https://Warehouse-Managament-System.github.io/WarehouseManagamentSystem/**
 
----
+| Page | Description |
+|---|---|
+| [Overview](docs/index.html) | Architecture overview, services, tech stack |
+| [C4 Architecture](docs/c4.html) | Interactive C4 model — L1 Context, L2 Container, L3 Component, L4 Code |
+| [Database](docs/database.html) | Design decisions, 38 tables across 7 databases, entity schemas |
+| [API](docs/api.html) | All ~60 REST endpoints grouped by service and role |
+| [Kafka Events](docs/kafka.html) | 16 event types, payload contracts, consumer groups, DLT |
+| [Database Schema (SQL)](docs/database-schema.sql) | Full PostgreSQL DDL with all constraints and indexes |
 
-### 🏢 Warehouse Owner
-- **Publish warehouses** with name, location, total capacity, and description
-- **Divide warehouses** into named zones (e.g., "Warehouse A") and individual rooms
-  - Set room dimensions (e.g., 5 rooms × 50 m²)
-  - Set pricing per m² (e.g., $25/m²)
-- **Categorize storage areas** by good type:
-  - 🥩 Food Storage
-  - 💊 Medicine / Pharmaceutical
-  - ❄️ Cold Storage
-  - 📦 General Goods
-  - *(and more)*
-- View rental occupancy, revenue, and room availability
-
----
-
-### 🛍️ Customer
-- **Browse and rent** available warehouses and specific rooms
-- **Manage stored goods** — log what is stored, where, and how much
-  - Example: *"Warehouse A → Room 3 → Bread: 200kg, Meat: 200kg"*
-- **Place delivery orders** — specify goods, quantities, and destination (market, supermarket, etc.)
-- View order history and real-time delivery tracking
-
----
-
-### 👷 Staff Worker
-- **View and accept incoming orders** from customers
-- **Package goods** according to order specifications
-- **Send notifications** to delivery agents when goods are ready for pickup
-- Update order status throughout the packaging process
-
----
-
-### 🚚 Delivery Agent
-- **Receive notifications** when packages are ready
-- **Accept delivery tasks** with destination details
-- **Complete deliveries** to specified locations (markets, supermarkets, etc.)
-- On successful delivery → warehouse inventory is **automatically updated** in real time
-
----
-
-## 🔄 System Flow
-
-```
-Customer places order
-        │
-        ▼
-Staff Worker receives order
-        │
-        ▼
-Staff packages goods → notifies Delivery Agent
-        │
-        ▼
-Delivery Agent accepts & delivers to destination
-        │
-        ▼
-Warehouse inventory auto-updated ✅
-```
-
----
-
-## 🛠️ Tech Stack
-
-> *(Update this section based on your actual stack)*
+## Tech Stack
 
 | Layer | Technology |
-|-------|------------|
-| **Frontend** | React / Next.js |
-| **Backend** | Java / SpringBoot |
-| **Database** | PostgreSQL |
-| **Auth** | JWT + Role-based middleware |
-| **Real-time** | WebSockets / Firebase |
-| **Containerization** | Docker + Docker Compose |
-| **Cloud** | AWS / GCP / Azure |
+|---|---|
+| Language | Java 21 |
+| Framework | Spring Boot 3, Spring Cloud 2023.x |
+| Build | Gradle (Kotlin DSL) |
+| Database | PostgreSQL 15, Spring Data JPA, Flyway |
+| Messaging | Apache Kafka 3, Spring Kafka, Debezium CDC |
+| Cache | Redis 7, Spring Data Redis |
+| Security | Spring Security 6, JWT (jjwt) |
+| Payments | Stripe Java SDK |
+| Excel | Apache POI |
+| Resilience | Resilience4j (circuit breaker, retry, time limiter) |
+| Service Comm | OpenFeign, Spring Cloud LoadBalancer |
+| Tracing | Micrometer Tracing, Zipkin |
+| Containers | Docker, Docker Compose |
 
----
-
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-- Java >= 18
-- PostgreSQL >= 14
-- Docker (optional but recommended)
+- Java 21+
+- Docker and Docker Compose
+- Gradle 8+ (or use the included wrapper)
 
-### Installation
+### Run
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/warehousehub.git
-cd warehousehub
+# Start all infrastructure (databases, Kafka, Redis, Eureka, etc.)
+docker-compose up -d
 
-# Install dependencies
-npm install
-
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your database credentials and JWT secret
-
-# Run database migrations
-npm run migrate
-
-# Start the development server
-npm run dev
+# Run a specific service
+./gradlew :identity-service:bootRun
 ```
 
-The app will be available at `http://localhost:3000`
+### Project Structure
 
----
+```
+wms-platform/
+├── wms-common/                  # Shared library (DTOs, exceptions, outbox, security utils)
+├── identity-service/            # Auth + Users + Profiles
+├── warehouse-service/           # Warehouses + Zones + Rooms + Categories
+├── booking-service/             # Bookings + Expiry tracking
+├── goods-service/               # Goods imports + Items + Receipts
+├── delivery-service/            # Deliveries + Shipments + Checkpoints
+├── billing-service/             # Invoices + Payments + Credit notes
+├── platform-service/            # Notifications + Audit + Scheduler
+├── api-gateway/                 # Spring Cloud Gateway
+├── config-server/               # Spring Cloud Config Server
+├── eureka-server/               # Service Discovery
+├── docs/                        # Architecture documentation (GitHub Pages)
+│   ├── index.html               # Overview — services, roles, tech stack
+│   ├── c4.html                  # Interactive C4 model (L1–L4)
+│   ├── database.html            # Database design, 38 tables across 7 DBs
+│   ├── api.html                 # ~60 REST endpoints by service and role
+│   ├── kafka.html               # 16 Kafka events, DLT, consumer groups
+│   ├── database-schema.sql      # Full PostgreSQL DDL
+│   └── style.css                # Shared site styling
+└── docker-compose.yml
+```
 
-## 📡 API Documentation
+## License
 
-API documentation is available at `/api/docs` (Swagger UI) once the server is running.
-
-Key endpoint groups:
-
-- `POST /auth/register` — Register with role selection
-- `POST /auth/login` — Login and receive JWT
-- `GET /warehouses` — Browse available warehouses
-- `POST /warehouses` — Publish a warehouse *(Owner only)*
-- `POST /orders` — Place a delivery order *(Customer only)*
-- `PATCH /orders/:id/package` — Mark order as packaged *(Staff only)*
-- `PATCH /orders/:id/deliver` — Complete delivery *(Delivery only)*
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature-name`
-3. Commit your changes: `git commit -m "feat: add your feature"`
-4. Push to the branch: `git push origin feature/your-feature-name`
-5. Open a Pull Request
-
-Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for more details.
-
----
-
-## 📄 License
-
-This project is licensed under the [MIT License](./LICENSE).
-
----
-
-<p align="center">Built with ❤️ — connecting warehouses, people, and goods.</p>
+MIT

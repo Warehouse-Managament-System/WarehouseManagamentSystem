@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WMS — API Overview</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <a href="index.html">Overview</a>
+  <a href="c4.html">C4 Architecture</a>
+  <a href="database.html">Database</a>
+  <a href="api.html" class="active">API</a>
+  <a href="kafka.html">Kafka Events</a>
+</nav>
+
+<div class="site-header">
+  <span class="tag">REST API</span>
+  <h1>API <span>Overview</span></h1>
+  <p>All endpoints are accessed through the API Gateway (port 8080). JWT required unless marked as public.</p>
+</div>
+
+<div class="page-content">
+
+  <!-- Identity Service -->
+  <div class="section">
+    <div class="section-title">Identity Service — Auth</div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/auth/register/owner</td><td class="access">Public</td><td class="desc">Register as warehouse owner (pending approval)</td></tr>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/auth/register/customer</td><td class="access">Public</td><td class="desc">Register as customer</td></tr>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/auth/login</td><td class="access">Public</td><td class="desc">Login, returns JWT access + refresh tokens</td></tr>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/auth/refresh-token</td><td class="access">Public</td><td class="desc">Refresh expired access token</td></tr>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/auth/forgot-password</td><td class="access">Public</td><td class="desc">Initiate password reset flow</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Identity Service — Users &amp; Profiles</div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/users/me</td><td class="access">Authenticated</td><td class="desc">Get current user profile</td></tr>
+        <tr><td><span class="method method-patch">PATCH</span></td><td class="endpoint">/users/me</td><td class="access">Authenticated</td><td class="desc">Update current user profile</td></tr>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/admin/owners</td><td class="access">Super Admin</td><td class="desc">List warehouse owner applications</td></tr>
+        <tr><td><span class="method method-patch">PATCH</span></td><td class="endpoint">/admin/owners/{id}/approve</td><td class="access">Super Admin</td><td class="desc">Approve warehouse owner</td></tr>
+        <tr><td><span class="method method-patch">PATCH</span></td><td class="endpoint">/admin/owners/{id}/reject</td><td class="access">Super Admin</td><td class="desc">Reject warehouse owner with reason</td></tr>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/owner/staff</td><td class="access">Warehouse Owner</td><td class="desc">Create staff account for a warehouse</td></tr>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/owner/delivery-agents</td><td class="access">Warehouse Owner</td><td class="desc">Create delivery agent account</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Warehouse Service -->
+  <div class="section">
+    <div class="section-title">Warehouse Service — Warehouses</div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/owner/warehouses</td><td class="access">Warehouse Owner</td><td class="desc">Create a new warehouse (DRAFT)</td></tr>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/owner/warehouses</td><td class="access">Warehouse Owner</td><td class="desc">List own warehouses</td></tr>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/owner/warehouses/{id}</td><td class="access">Warehouse Owner</td><td class="desc">Get warehouse details</td></tr>
+        <tr><td><span class="method method-patch">PATCH</span></td><td class="endpoint">/owner/warehouses/{id}</td><td class="access">Warehouse Owner</td><td class="desc">Update warehouse</td></tr>
+        <tr><td><span class="method method-patch">PATCH</span></td><td class="endpoint">/owner/warehouses/{id}/publish</td><td class="access">Warehouse Owner</td><td class="desc">Publish warehouse (DRAFT &rarr; PUBLISHED)</td></tr>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/warehouses</td><td class="access">Public</td><td class="desc">Browse published warehouses</td></tr>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/warehouses/{id}</td><td class="access">Public</td><td class="desc">Get published warehouse details</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Warehouse Service — Excel Import</div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/owner/warehouses/{id}/import/template</td><td class="access">Warehouse Owner</td><td class="desc">Download Excel template for warehouse blueprint</td></tr>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/owner/warehouses/{id}/import</td><td class="access">Warehouse Owner</td><td class="desc">Upload filled Excel (creates zones, rooms, categories)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Warehouse Service — Zones, Rooms &amp; Categories</div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/owner/warehouses/{id}/zones</td><td class="access">Warehouse Owner</td><td class="desc">Create zone</td></tr>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/warehouses/{id}/zones</td><td class="access">Public</td><td class="desc">List zones for a warehouse</td></tr>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/owner/zones/{id}/availabilities</td><td class="access">Warehouse Owner</td><td class="desc">Set availability date range for zone</td></tr>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/owner/zones/{id}/rooms</td><td class="access">Warehouse Owner</td><td class="desc">Create room in zone</td></tr>
+        <tr><td><span class="method method-patch">PATCH</span></td><td class="endpoint">/owner/rooms/{id}/status</td><td class="access">Warehouse Owner</td><td class="desc">Update room status</td></tr>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/categories</td><td class="access">Warehouse Owner</td><td class="desc">Create a category</td></tr>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/categories</td><td class="access">Authenticated</td><td class="desc">List all categories</td></tr>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/zones/{id}/categories</td><td class="access">Warehouse Owner</td><td class="desc">Link category to zone</td></tr>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/rooms/{id}/categories</td><td class="access">Warehouse Owner</td><td class="desc">Link category to room</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Booking Service -->
+  <div class="section">
+    <div class="section-title">Booking Service</div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/customer/bookings</td><td class="access">Customer</td><td class="desc">Create booking request (checks availability via Warehouse Service + Redis lock)</td></tr>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/customer/bookings</td><td class="access">Customer</td><td class="desc">List own bookings</td></tr>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/customer/bookings/{id}</td><td class="access">Customer</td><td class="desc">Get booking details</td></tr>
+        <tr><td><span class="method method-patch">PATCH</span></td><td class="endpoint">/customer/bookings/{id}/cancel</td><td class="access">Customer</td><td class="desc">Cancel a booking</td></tr>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/owner/bookings</td><td class="access">Warehouse Owner</td><td class="desc">List bookings for own warehouses</td></tr>
+        <tr><td><span class="method method-patch">PATCH</span></td><td class="endpoint">/owner/bookings/{id}/confirm</td><td class="access">Warehouse Owner</td><td class="desc">Confirm a pending booking</td></tr>
+        <tr><td><span class="method method-patch">PATCH</span></td><td class="endpoint">/owner/bookings/{id}/reject</td><td class="access">Warehouse Owner</td><td class="desc">Reject a pending booking</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Goods Service -->
+  <div class="section">
+    <div class="section-title">Goods Service — Import</div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/customer/bookings/{id}/goods/template</td><td class="access">Customer</td><td class="desc">Download goods Excel template</td></tr>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/customer/bookings/{id}/goods/import</td><td class="access">Customer</td><td class="desc">Upload goods list (validates against active booking)</td></tr>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/customer/goods/imports</td><td class="access">Customer</td><td class="desc">List own goods imports</td></tr>
+        <tr><td><span class="method method-patch">PATCH</span></td><td class="endpoint">/owner/goods/imports/{id}/approve</td><td class="access">Warehouse Owner</td><td class="desc">Approve goods import (sets arrival deadline)</td></tr>
+        <tr><td><span class="method method-patch">PATCH</span></td><td class="endpoint">/owner/goods/imports/{id}/reject</td><td class="access">Warehouse Owner</td><td class="desc">Reject goods import with reason</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Goods Service — Receipt</div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/staff/goods/receipts</td><td class="access">Staff</td><td class="desc">Create goods receipt when goods arrive physically</td></tr>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/staff/goods/receipts/{id}/items</td><td class="access">Staff</td><td class="desc">Record per-item receipt (condition, qty discrepancy)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Delivery Service -->
+  <div class="section">
+    <div class="section-title">Delivery Service — Requests</div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/customer/bookings/{id}/deliveries</td><td class="access">Customer</td><td class="desc">Create delivery request for goods in a booking</td></tr>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/customer/deliveries</td><td class="access">Customer</td><td class="desc">List own delivery requests</td></tr>
+        <tr><td><span class="method method-patch">PATCH</span></td><td class="endpoint">/staff/deliveries/{id}/start-picking</td><td class="access">Staff</td><td class="desc">Start picking goods for delivery</td></tr>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/staff/deliveries/{id}/notify-agents</td><td class="access">Staff</td><td class="desc">Notify delivery agents that goods are ready</td></tr>
+        <tr><td><span class="method method-patch">PATCH</span></td><td class="endpoint">/agent/deliveries/{id}/claim</td><td class="access">Delivery Agent</td><td class="desc">Claim a delivery (first-come-first-served)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Delivery Service — Shipments</div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/agent/shipments/{id}/checkpoints</td><td class="access">Delivery Agent</td><td class="desc">Add checkpoint (location, status update)</td></tr>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/customer/shipments/{id}/track</td><td class="access">Customer</td><td class="desc">Track shipment with all checkpoints</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Billing Service -->
+  <div class="section">
+    <div class="section-title">Billing Service</div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/customer/invoices</td><td class="access">Customer</td><td class="desc">List own invoices</td></tr>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/customer/invoices/{id}/pay</td><td class="access">Customer</td><td class="desc">Create Stripe Checkout session</td></tr>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/owner/invoices</td><td class="access">Warehouse Owner</td><td class="desc">List invoices for own warehouses</td></tr>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/owner/invoices/{id}/credit-note</td><td class="access">Warehouse Owner</td><td class="desc">Issue credit note against invoice</td></tr>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/webhooks/stripe</td><td class="access">Public (Stripe signature)</td><td class="desc">Handle Stripe payment success/failure</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Platform Service -->
+  <div class="section">
+    <div class="section-title">Platform Service — Notifications</div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/notifications</td><td class="access">Authenticated</td><td class="desc">List own notifications</td></tr>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/notifications/unread-count</td><td class="access">Authenticated</td><td class="desc">Get unread notification count</td></tr>
+        <tr><td><span class="method method-patch">PATCH</span></td><td class="endpoint">/notifications/{id}/read</td><td class="access">Authenticated</td><td class="desc">Mark notification as read</td></tr>
+        <tr><td><span class="method method-patch">PATCH</span></td><td class="endpoint">/notifications/read-all</td><td class="access">Authenticated</td><td class="desc">Mark all notifications as read</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Internal Endpoints -->
+  <div class="section">
+    <div class="section-title">Internal Endpoints (Service-to-Service Only)</div>
+    <div class="explanation">
+      These endpoints are <strong>not exposed through the API Gateway</strong>. They are used for inter-service synchronous communication via OpenFeign.
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Service</th><th>Endpoint</th><th>Called By</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="badge badge-service">Warehouse</span></td><td class="endpoint">/internal/rooms/{id}/availability</td><td>Booking</td><td class="desc">Check room availability for date range</td></tr>
+        <tr><td><span class="badge badge-service">Booking</span></td><td class="endpoint">/internal/bookings/{id}/status</td><td>Goods</td><td class="desc">Verify booking is active</td></tr>
+        <tr><td><span class="badge badge-service">Goods</span></td><td class="endpoint">/internal/goods-items/{id}/available-qty</td><td>Delivery</td><td class="desc">Check available quantity for picking</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+</body>
+</html>

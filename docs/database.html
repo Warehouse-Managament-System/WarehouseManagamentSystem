@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WMS — Database Architecture</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <a href="index.html">Overview</a>
+  <a href="c4.html">C4 Architecture</a>
+  <a href="database.html" class="active">Database</a>
+  <a href="api.html">API</a>
+  <a href="kafka.html">Kafka Events</a>
+</nav>
+
+<div class="site-header">
+  <span class="tag">DATA ARCHITECTURE</span>
+  <h1>Database <span>Architecture</span></h1>
+  <p>Each microservice owns its own PostgreSQL database. No service accesses another service's database directly. Cross-service references use plain UUIDs without foreign key constraints.</p>
+</div>
+
+<div class="page-content">
+
+  <!-- Design Decisions -->
+  <div class="section">
+    <div class="section-title">Design Decisions</div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Decision</th><th>Rationale</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Database-per-service</strong></td><td class="desc">Strong data ownership. Each service can evolve its schema independently.</td></tr>
+        <tr><td><strong>UUID primary keys</strong></td><td class="desc">No auto-increment leaking row counts. Safe for distributed systems.</td></tr>
+        <tr><td><strong>TIMESTAMPTZ everywhere</strong></td><td class="desc">System spans multiple cities/countries. Timezone-aware timestamps prevent silent data corruption.</td></tr>
+        <tr><td><strong>Enums as VARCHAR</strong></td><td class="desc">Readable in queries. No enum type migration headaches. CHECK constraints enforce valid values.</td></tr>
+        <tr><td><strong>Soft delete (deleted_at)</strong></td><td class="desc">Only on entities that need it: rooms, bookings, goods_items, warehouse_owner_profiles. NULL = active.</td></tr>
+        <tr><td><strong>Transactional Outbox</strong></td><td class="desc">Every service has an outbox_events table. Business data and events are written in the same DB transaction. Debezium CDC reads the outbox and publishes to Kafka.</td></tr>
+        <tr><td><strong>No cross-DB foreign keys</strong></td><td class="desc">In microservices, tables in different databases can't have FK constraints. Cross-service references store the UUID and rely on application-level validation via REST calls.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Identity Service -->
+  <div class="section">
+    <div class="section-title">Identity Service — identity_db</div>
+
+    <div class="schema-section">
+      <div class="schema-header" style="background:var(--person-bg); color:var(--person-text);">users</div>
+      <table class="schema-table">
+        <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="pk">id</td><td>UUID</td><td>Primary key</td></tr>
+          <tr><td>email</td><td>VARCHAR</td><td>UNIQUE</td></tr>
+          <tr><td>password</td><td>VARCHAR</td><td>BCrypt hashed</td></tr>
+          <tr><td>first_name, last_name</td><td>VARCHAR</td><td></td></tr>
+          <tr><td>phone</td><td>VARCHAR</td><td></td></tr>
+          <tr><td>role</td><td>VARCHAR</td><td>CHECK: SUPER_ADMIN, WAREHOUSE_OWNER, CUSTOMER, STAFF, DELIVERY_AGENT</td></tr>
+          <tr><td>status</td><td>VARCHAR</td><td>CHECK: ACTIVE, INACTIVE, PENDING_APPROVAL</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="schema-section">
+      <div class="schema-header" style="background:var(--person-bg); color:var(--person-text);">warehouse_owner_profiles</div>
+      <table class="schema-table">
+        <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="pk">id</td><td>UUID</td><td>Primary key</td></tr>
+          <tr><td class="fk">user_id</td><td>UUID</td><td>FK &rarr; users (UNIQUE)</td></tr>
+          <tr><td>company_name</td><td>VARCHAR</td><td></td></tr>
+          <tr><td>tax_id</td><td>VARCHAR</td><td>UNIQUE</td></tr>
+          <tr><td>address, city, country</td><td>VARCHAR</td><td></td></tr>
+          <tr><td class="fk">approved_by</td><td>UUID</td><td>FK &rarr; users (nullable)</td></tr>
+          <tr><td>approved_at</td><td>TIMESTAMPTZ</td><td>nullable</td></tr>
+          <tr><td>rejection_reason</td><td>VARCHAR</td><td>nullable</td></tr>
+          <tr><td>deleted_at</td><td>TIMESTAMPTZ</td><td>nullable — soft delete</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="schema-section">
+      <div class="schema-header" style="background:var(--person-bg); color:var(--person-text);">customer_profiles &bull; staff_profiles &bull; delivery_agent_profiles</div>
+      <table class="schema-table">
+        <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="pk">id</td><td>UUID</td><td>Primary key</td></tr>
+          <tr><td class="fk">user_id</td><td>UUID</td><td>FK &rarr; users (UNIQUE)</td></tr>
+          <tr><td>company_name, tax_id</td><td>VARCHAR</td><td>customer_profiles only</td></tr>
+          <tr><td>contact_person_name</td><td>VARCHAR</td><td>customer_profiles only</td></tr>
+          <tr><td class="xref">warehouse_id</td><td>UUID</td><td>staff &amp; agent only — cross-service ref</td></tr>
+          <tr><td>position</td><td>VARCHAR</td><td>staff_profiles only</td></tr>
+          <tr><td>vehicle_info</td><td>VARCHAR</td><td>delivery_agent_profiles only</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Warehouse Service -->
+  <div class="section">
+    <div class="section-title">Warehouse Service — warehouse_db</div>
+
+    <div class="schema-section">
+      <div class="schema-header" style="background:var(--system-bg); color:var(--system-text);">warehouses</div>
+      <table class="schema-table">
+        <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="pk">id</td><td>UUID</td><td>Primary key</td></tr>
+          <tr><td class="xref">owner_id</td><td>UUID</td><td>cross-service ref to users</td></tr>
+          <tr><td>name</td><td>VARCHAR</td><td></td></tr>
+          <tr><td>address, city, country</td><td>VARCHAR</td><td></td></tr>
+          <tr><td>latitude, longitude</td><td>DECIMAL</td><td></td></tr>
+          <tr><td>total_surface_area</td><td>DECIMAL</td><td>m&sup2;</td></tr>
+          <tr><td>status</td><td>VARCHAR</td><td>CHECK: DRAFT, PUBLISHED, SUSPENDED, INACTIVE</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="schema-section">
+      <div class="schema-header" style="background:var(--system-bg); color:var(--system-text);">zones</div>
+      <table class="schema-table">
+        <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="pk">id</td><td>UUID</td><td>Primary key</td></tr>
+          <tr><td class="fk">warehouse_id</td><td>UUID</td><td>FK &rarr; warehouses</td></tr>
+          <tr><td>name</td><td>VARCHAR</td><td>UNIQUE per warehouse</td></tr>
+          <tr><td>temperature_type</td><td>VARCHAR</td><td>CHECK: AMBIENT, REFRIGERATED, FROZEN</td></tr>
+          <tr><td>total_surface_area</td><td>DECIMAL</td><td>m&sup2;</td></tr>
+          <tr><td>status</td><td>VARCHAR</td><td>CHECK: ACTIVE, MAINTENANCE, CLOSED</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="schema-section">
+      <div class="schema-header" style="background:var(--system-bg); color:var(--system-text);">rooms</div>
+      <table class="schema-table">
+        <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="pk">id</td><td>UUID</td><td>Primary key</td></tr>
+          <tr><td class="fk">zone_id</td><td>UUID</td><td>FK &rarr; zones</td></tr>
+          <tr><td>name</td><td>VARCHAR</td><td>UNIQUE per zone</td></tr>
+          <tr><td>total_surface_area</td><td>DECIMAL</td><td>m&sup2;</td></tr>
+          <tr><td>price_per_sqm_daily</td><td>DECIMAL</td><td>CHECK &gt; 0</td></tr>
+          <tr><td>price_per_sqm_weekly</td><td>DECIMAL</td><td>CHECK &gt; 0</td></tr>
+          <tr><td>price_per_sqm_monthly</td><td>DECIMAL</td><td>CHECK &gt; 0</td></tr>
+          <tr><td>status</td><td>VARCHAR</td><td>CHECK: AVAILABLE, BOOKED, MAINTENANCE, CLOSED</td></tr>
+          <tr><td>deleted_at</td><td>TIMESTAMPTZ</td><td>nullable — soft delete</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="schema-section">
+      <div class="schema-header" style="background:var(--system-bg); color:var(--system-text);">categories &bull; zone_categories &bull; room_categories &bull; zone_availabilities &bull; warehouse_images &bull; warehouse_excel_imports</div>
+      <table class="schema-table">
+        <thead><tr><th>Table</th><th>Key Columns</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>categories</td><td class="mono">id, name (UNIQUE), description</td><td>Standalone — globally unique names</td></tr>
+          <tr><td>zone_categories</td><td class="mono">zone_id (FK), category_id (FK)</td><td>Junction: which categories a zone accepts</td></tr>
+          <tr><td>room_categories</td><td class="mono">room_id (FK), category_id (FK)</td><td>Junction: which categories a room accepts</td></tr>
+          <tr><td>zone_availabilities</td><td class="mono">zone_id (FK), start_date, end_date</td><td>Date ranges when zone is available</td></tr>
+          <tr><td>warehouse_images</td><td class="mono">warehouse_id (FK), url, is_primary</td><td>Partial unique: one primary image per warehouse</td></tr>
+          <tr><td>warehouse_excel_imports</td><td class="mono">warehouse_id (FK), file_name, status, row counts</td><td>Tracks Excel blueprint uploads</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Booking Service -->
+  <div class="section">
+    <div class="section-title">Booking Service — booking_db</div>
+
+    <div class="schema-section">
+      <div class="schema-header" style="background:var(--kafka-bg); color:var(--kafka-text);">bookings</div>
+      <table class="schema-table">
+        <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="pk">id</td><td>UUID</td><td>Primary key</td></tr>
+          <tr><td class="xref">customer_id</td><td>UUID</td><td>cross-service ref</td></tr>
+          <tr><td class="xref">warehouse_id</td><td>UUID</td><td>cross-service ref</td></tr>
+          <tr><td>booking_type</td><td>VARCHAR</td><td>CHECK: ROOM, ZONE, WAREHOUSE</td></tr>
+          <tr><td class="xref">room_id</td><td>UUID</td><td>nullable — cross-service ref</td></tr>
+          <tr><td class="xref">zone_id</td><td>UUID</td><td>nullable — cross-service ref</td></tr>
+          <tr><td>start_date, end_date</td><td>DATE</td><td>CHECK: end &gt; start</td></tr>
+          <tr><td>surface_area</td><td>DECIMAL</td><td>m&sup2;</td></tr>
+          <tr><td>total_price</td><td>DECIMAL</td><td>CHECK &gt; 0</td></tr>
+          <tr><td>status</td><td>VARCHAR</td><td>CHECK: PENDING, CONFIRMED, ACTIVE, EXPIRED, CANCELLED</td></tr>
+          <tr><td>deleted_at</td><td>TIMESTAMPTZ</td><td>nullable — soft delete</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="explanation">
+      <strong>Discriminated union CHECK:</strong> ROOM &rarr; room_id NOT NULL, zone_id NULL | ZONE &rarr; zone_id NOT NULL, room_id NULL | WAREHOUSE &rarr; both NULL
+    </div>
+
+    <div class="schema-section">
+      <div class="schema-header" style="background:var(--kafka-bg); color:var(--kafka-text);">booking_expiry_notifications</div>
+      <table class="schema-table">
+        <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="pk">id</td><td>UUID</td><td>Primary key</td></tr>
+          <tr><td class="fk">booking_id</td><td>UUID</td><td>FK &rarr; bookings (UNIQUE — one per booking)</td></tr>
+          <tr><td>notified_at</td><td>TIMESTAMPTZ</td><td></td></tr>
+          <tr><td>status</td><td>VARCHAR</td><td>CHECK: SENT, ACKNOWLEDGED</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Goods Service -->
+  <div class="section">
+    <div class="section-title">Goods Service — goods_db</div>
+
+    <div class="schema-section">
+      <div class="schema-header" style="background:var(--batch-bg); color:var(--batch-text);">goods_excel_imports</div>
+      <table class="schema-table">
+        <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="pk">id</td><td>UUID</td><td>Primary key</td></tr>
+          <tr><td class="xref">booking_id</td><td>UUID</td><td>cross-service ref</td></tr>
+          <tr><td class="xref">customer_id</td><td>UUID</td><td>cross-service ref</td></tr>
+          <tr><td>file_name</td><td>VARCHAR</td><td></td></tr>
+          <tr><td>status</td><td>VARCHAR</td><td>CHECK: PENDING, APPROVED, REJECTED</td></tr>
+          <tr><td>total_rows, success_rows, failed_rows</td><td>INT</td><td></td></tr>
+          <tr><td>arrival_deadline</td><td>TIMESTAMPTZ</td><td>Set when approved</td></tr>
+          <tr><td class="xref">approved_by</td><td>UUID</td><td>cross-service ref (nullable)</td></tr>
+          <tr><td>approved_at</td><td>TIMESTAMPTZ</td><td>nullable</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="schema-section">
+      <div class="schema-header" style="background:var(--batch-bg); color:var(--batch-text);">goods_items &bull; goods_receipts &bull; goods_receipt_items</div>
+      <table class="schema-table">
+        <thead><tr><th>Table</th><th>Key Columns</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>goods_items</td><td class="mono">goods_import_id (FK), name, sku, barcode, quantity, status</td><td>SKU &amp; barcode UNIQUE per import. Soft-deletable.</td></tr>
+          <tr><td>goods_receipts</td><td class="mono">booking_id (xref), received_by (xref), inbound_carrier</td><td>Staff confirmation when goods arrive</td></tr>
+          <tr><td>goods_receipt_items</td><td class="mono">goods_receipt_id (FK), goods_item_id (FK), expected/received qty, condition</td><td>UNIQUE per receipt+item. Condition: GOOD/DAMAGED/REJECTED</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Delivery Service -->
+  <div class="section">
+    <div class="section-title">Delivery Service — delivery_db</div>
+
+    <div class="schema-section">
+      <div class="schema-header" style="background:var(--component-bg); color:var(--component-text);">delivery_requests &bull; delivery_request_items &bull; delivery_notifications</div>
+      <table class="schema-table">
+        <thead><tr><th>Table</th><th>Key Columns</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>delivery_requests</td><td class="mono">booking_id (xref), customer_id (xref), destination_address, status</td><td>Status: PENDING through DELIVERED/CANCELLED</td></tr>
+          <tr><td>delivery_request_items</td><td class="mono">delivery_request_id (FK), goods_item_id (xref), requested/picked qty</td><td>Tracks picking: picked_by, picked_at. UNIQUE per request+item</td></tr>
+          <tr><td>delivery_notifications</td><td class="mono">delivery_request_id (FK), status, expires_at</td><td>Broadcast to agents. Status: OPEN/CLAIMED/EXPIRED</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="schema-section">
+      <div class="schema-header" style="background:var(--component-bg); color:var(--component-text);">shipments &bull; shipment_checkpoints</div>
+      <table class="schema-table">
+        <thead><tr><th>Table</th><th>Key Columns</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>shipments</td><td class="mono">delivery_request_id (FK), claimed_by (xref), tracking_number (UNIQUE), status</td><td>Status: PENDING &rarr; PICKED_UP &rarr; IN_TRANSIT &rarr; DELIVERED</td></tr>
+          <tr><td>shipment_checkpoints</td><td class="mono">shipment_id (FK), status, location, note, recorded_at</td><td>Location + status updates during transit</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Billing Service -->
+  <div class="section">
+    <div class="section-title">Billing Service — billing_db</div>
+
+    <div class="schema-section">
+      <div class="schema-header" style="background:var(--system-bg); color:var(--system-text);">invoices</div>
+      <table class="schema-table">
+        <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="pk">id</td><td>UUID</td><td>Primary key</td></tr>
+          <tr><td class="xref">customer_id</td><td>UUID</td><td>cross-service ref</td></tr>
+          <tr><td class="xref">warehouse_id</td><td>UUID</td><td>cross-service ref</td></tr>
+          <tr><td class="xref">booking_id</td><td>UUID</td><td>nullable — cross-service ref</td></tr>
+          <tr><td class="xref">delivery_request_id</td><td>UUID</td><td>nullable — cross-service ref</td></tr>
+          <tr><td>invoice_type</td><td>VARCHAR</td><td>CHECK: BOOKING, DELIVERY</td></tr>
+          <tr><td>amount</td><td>DECIMAL</td><td>CHECK &gt; 0</td></tr>
+          <tr><td>currency</td><td>VARCHAR</td><td></td></tr>
+          <tr><td>status</td><td>VARCHAR</td><td>CHECK: DRAFT, SENT, PAID, OVERDUE, CANCELLED</td></tr>
+          <tr><td>due_date</td><td>DATE</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="explanation">
+      <strong>Discriminated union CHECK:</strong> BOOKING &rarr; booking_id NOT NULL, delivery_request_id NULL | DELIVERY &rarr; delivery_request_id NOT NULL, booking_id NULL
+    </div>
+
+    <div class="schema-section">
+      <div class="schema-header" style="background:var(--system-bg); color:var(--system-text);">invoice_items &bull; payments &bull; credit_notes</div>
+      <table class="schema-table">
+        <thead><tr><th>Table</th><th>Key Columns</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>invoice_items</td><td class="mono">invoice_id (FK), description, quantity, unit_price, total</td><td>Line items</td></tr>
+          <tr><td>payments</td><td class="mono">invoice_id (FK), stripe_payment_id (UNIQUE), amount, status</td><td>Tracks receipt URL and failure reason</td></tr>
+          <tr><td>credit_notes</td><td class="mono">invoice_id (FK), reason, amount</td><td>Issued by warehouse owner</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Platform Service -->
+  <div class="section">
+    <div class="section-title">Platform Service — platform_db</div>
+
+    <div class="schema-section">
+      <div class="schema-header" style="background:var(--db-bg); color:var(--db-text);">notifications &bull; audit_logs</div>
+      <table class="schema-table">
+        <thead><tr><th>Table</th><th>Key Columns</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>notifications</td><td class="mono">user_id (xref), type, message, is_read, read_at, link</td><td>In-app notifications. 15 event types. Tracks read status.</td></tr>
+          <tr><td>audit_logs</td><td class="mono">performed_by (UUID, no FK), action, entity_type, entity_id, old_value (JSONB), new_value (JSONB)</td><td>Immutable. No FK to users — survives user deletion.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Table Summary -->
+  <div class="section">
+    <div class="section-title">Table Summary</div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Service</th><th>Database</th><th>Tables</th><th>Key Entities</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Identity</strong></td><td class="mono">identity_db</td><td>5 + outbox</td><td class="desc">users, warehouse_owner_profiles, customer_profiles, staff_profiles, delivery_agent_profiles</td></tr>
+        <tr><td><strong>Warehouse</strong></td><td class="mono">warehouse_db</td><td>9 + outbox</td><td class="desc">warehouses, warehouse_images, warehouse_excel_imports, categories, zones, zone_categories, zone_availabilities, rooms, room_categories</td></tr>
+        <tr><td><strong>Booking</strong></td><td class="mono">booking_db</td><td>2 + outbox</td><td class="desc">bookings, booking_expiry_notifications</td></tr>
+        <tr><td><strong>Goods</strong></td><td class="mono">goods_db</td><td>4 + outbox</td><td class="desc">goods_excel_imports, goods_items, goods_receipts, goods_receipt_items</td></tr>
+        <tr><td><strong>Delivery</strong></td><td class="mono">delivery_db</td><td>5 + outbox</td><td class="desc">delivery_requests, delivery_request_items, delivery_notifications, shipments, shipment_checkpoints</td></tr>
+        <tr><td><strong>Billing</strong></td><td class="mono">billing_db</td><td>4 + outbox</td><td class="desc">invoices, invoice_items, payments, credit_notes</td></tr>
+        <tr><td><strong>Platform</strong></td><td class="mono">platform_db</td><td>2 + outbox</td><td class="desc">notifications, audit_logs</td></tr>
+        <tr class="highlight-row"><td><strong>Total</strong></td><td></td><td><strong>31 + 7 = 38</strong></td><td>7 services &middot; 7 databases &middot; Transactional Outbox pattern</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Legend -->
+  <div class="section">
+    <div class="section-title">Legend</div>
+    <div class="info-grid" style="grid-template-columns: repeat(3, 1fr);">
+      <div class="info-box"><h4><span class="pk">PK</span></h4><p>Primary Key — UUID</p></div>
+      <div class="info-box"><h4><span class="fk">FK</span></h4><p>Foreign Key — same database</p></div>
+      <div class="info-box"><h4><span class="xref">xref</span></h4><p>UUID referencing another service (no FK constraint)</p></div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

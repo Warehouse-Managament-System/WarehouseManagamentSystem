@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WMS — Architecture Documentation</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <a href="index.html" class="active">Overview</a>
+  <a href="c4.html">C4 Architecture</a>
+  <a href="database.html">Database</a>
+  <a href="api.html">API</a>
+  <a href="kafka.html">Kafka Events</a>
+</nav>
+
+<div class="site-header">
+  <span class="tag">ARCHITECTURE DOCUMENTATION</span>
+  <h1>Warehouse<span>Management</span>System</h1>
+  <p>A B2B SaaS platform for warehouse space rental and logistics. Built as a microservices architecture with 7 independently deployable Spring Boot services, event-driven communication via Apache Kafka, and database-per-service isolation.</p>
+</div>
+
+<div class="page-content">
+
+  <!-- Architecture -->
+  <div class="section">
+    <div class="section-title">Architecture</div>
+    <div class="info-grid">
+      <div class="info-box">
+        <h4>STYLE</h4>
+        <p>Microservices (7 services), each with its own PostgreSQL database. No shared database access.</p>
+      </div>
+      <div class="info-box">
+        <h4>COMMUNICATION</h4>
+        <p><strong>Async:</strong> Kafka via Transactional Outbox + Debezium CDC<br><strong>Sync:</strong> REST/HTTP via OpenFeign + Resilience4j circuit breakers</p>
+      </div>
+      <div class="info-box">
+        <h4>INFRASTRUCTURE</h4>
+        <ul>
+          <li>Spring Cloud Gateway (API Gateway)</li>
+          <li>Netflix Eureka (Service Discovery)</li>
+          <li>Spring Cloud Config (Centralized Config)</li>
+          <li>Micrometer + Zipkin (Distributed Tracing)</li>
+        </ul>
+      </div>
+      <div class="info-box">
+        <h4>DATA &amp; INTEGRATIONS</h4>
+        <ul>
+          <li>PostgreSQL 15 (one per service)</li>
+          <li>Redis 7 (booking availability locks)</li>
+          <li>Stripe (Checkout + Webhooks)</li>
+          <li>Apache POI (Excel import/export)</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Services -->
+  <div class="section">
+    <div class="section-title">Services</div>
+    <div style="background:var(--white); border:1px solid var(--border); border-radius:12px; overflow:hidden;">
+      <table class="data-table">
+        <thead>
+          <tr><th>Service</th><th>Port</th><th>Database</th><th>Responsibilities</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Identity Service</strong></td><td class="mono">8081</td><td class="mono">identity_db</td><td class="desc">Auth, JWT, users, all profile types, Super Admin ops</td></tr>
+          <tr><td><strong>Warehouse Service</strong></td><td class="mono">8082</td><td class="mono">warehouse_db</td><td class="desc">Warehouses, zones, rooms, categories, Excel import</td></tr>
+          <tr><td><strong>Booking Service</strong></td><td class="mono">8083</td><td class="mono">booking_db</td><td class="desc">Booking lifecycle, availability checks via Redis</td></tr>
+          <tr><td><strong>Goods Service</strong></td><td class="mono">8084</td><td class="mono">goods_db</td><td class="desc">Goods Excel import, items, receipts, discrepancy handling</td></tr>
+          <tr><td><strong>Delivery Service</strong></td><td class="mono">8085</td><td class="mono">delivery_db</td><td class="desc">Delivery requests, picking, shipments, checkpoints</td></tr>
+          <tr><td><strong>Billing Service</strong></td><td class="mono">8086</td><td class="mono">billing_db</td><td class="desc">Invoices, Stripe payments, credit notes</td></tr>
+          <tr><td><strong>Platform Service</strong></td><td class="mono">8087</td><td class="mono">platform_db</td><td class="desc">Notifications, audit logs, scheduled batch jobs</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="explanation" style="margin-top:16px;">
+      <strong>Infrastructure:</strong> API Gateway (8080), Eureka (8761), Config Server (8888), Zipkin (9411).
+    </div>
+  </div>
+
+  <!-- User Roles -->
+  <div class="section">
+    <div class="section-title">User Roles</div>
+    <div class="card-grid" style="grid-template-columns: repeat(5, 1fr);">
+      <div class="card" style="border-top:3px solid var(--person-border);">
+        <span class="card-tag">ROLE</span>
+        <h3>Super Admin</h3>
+        <p>Reviews and approves warehouse owner registrations, manages platform-level access</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--system-border);">
+        <span class="card-tag">ROLE</span>
+        <h3>Warehouse Owner</h3>
+        <p>Registers warehouses, configures zones/rooms via Excel import, manages staff and delivery agents, approves bookings and goods</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--kafka-border);">
+        <span class="card-tag">ROLE</span>
+        <h3>Customer</h3>
+        <p>Browses warehouses, books storage space, uploads goods lists, requests deliveries, pays invoices</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--batch-border);">
+        <span class="card-tag">ROLE</span>
+        <h3>Staff</h3>
+        <p>Receives goods at warehouse, picks and packs orders, notifies delivery agents</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--component-border);">
+        <span class="card-tag">ROLE</span>
+        <h3>Delivery Agent</h3>
+        <p>Claims deliveries (first-come-first-served), picks up goods, updates shipment checkpoints</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Documentation Links -->
+  <div class="section">
+    <div class="section-title">Documentation</div>
+    <div class="card-grid" style="grid-template-columns: repeat(4, 1fr);">
+      <a href="c4.html" class="card" style="text-decoration:none; border-top:3px solid var(--accent);">
+        <span class="card-tag">C4 MODEL</span>
+        <h3 style="color:var(--text);">C4 Architecture</h3>
+        <p>L1 Context, L2 Container, L3 Component, L4 Code — full interactive C4 model</p>
+      </a>
+      <a href="database.html" class="card" style="text-decoration:none; border-top:3px solid var(--db-border);">
+        <span class="card-tag">DATABASE</span>
+        <h3 style="color:var(--text);">Database Architecture</h3>
+        <p>Design decisions, 38 tables across 7 databases, entity relationships</p>
+      </a>
+      <a href="api.html" class="card" style="text-decoration:none; border-top:3px solid var(--system-border);">
+        <span class="card-tag">REST API</span>
+        <h3 style="color:var(--text);">API Overview</h3>
+        <p>~60 REST endpoints grouped by service and role</p>
+      </a>
+      <a href="kafka.html" class="card" style="text-decoration:none; border-top:3px solid var(--kafka-border);">
+        <span class="card-tag">EVENTS</span>
+        <h3 style="color:var(--text);">Kafka Events</h3>
+        <p>16 event types, payload contracts, consumer groups, Dead Letter Topics</p>
+      </a>
+    </div>
+  </div>
+
+  <!-- Tech Stack -->
+  <div class="section">
+    <div class="section-title">Tech Stack</div>
+    <div style="background:var(--white); border:1px solid var(--border); border-radius:12px; overflow:hidden;">
+      <table class="data-table">
+        <thead>
+          <tr><th>Layer</th><th>Technology</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Language</td><td>Java 21</td></tr>
+          <tr><td>Framework</td><td>Spring Boot 3, Spring Cloud 2023.x</td></tr>
+          <tr><td>Build</td><td>Gradle (Kotlin DSL)</td></tr>
+          <tr><td>Database</td><td>PostgreSQL 15, Spring Data JPA, Flyway</td></tr>
+          <tr><td>Messaging</td><td>Apache Kafka 3, Spring Kafka, Debezium CDC</td></tr>
+          <tr><td>Cache</td><td>Redis 7, Spring Data Redis</td></tr>
+          <tr><td>Security</td><td>Spring Security 6, JWT (jjwt)</td></tr>
+          <tr><td>Payments</td><td>Stripe Java SDK</td></tr>
+          <tr><td>Excel</td><td>Apache POI</td></tr>
+          <tr><td>Resilience</td><td>Resilience4j (circuit breaker, retry, time limiter)</td></tr>
+          <tr><td>Service Comm</td><td>OpenFeign, Spring Cloud LoadBalancer</td></tr>
+          <tr><td>Tracing</td><td>Micrometer Tracing, Zipkin</td></tr>
+          <tr><td>Containers</td><td>Docker, Docker Compose</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
