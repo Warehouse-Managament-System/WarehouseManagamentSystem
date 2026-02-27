@@ -62,13 +62,13 @@ Full architecture documentation is hosted as an HTML site via **GitHub Pages**:
 
 | Layer | Technology |
 |---|---|
-| Language | Java 21 |
-| Framework | Spring Boot 3, Spring Cloud 2023.x |
+| Language | Java 25 |
+| Framework | Spring Boot 4, Spring Cloud |
 | Build | Gradle (Kotlin DSL) |
-| Database | PostgreSQL 15, Spring Data JPA, Flyway |
-| Messaging | Apache Kafka 3, Spring Kafka, Debezium CDC |
-| Cache | Redis 7, Spring Data Redis |
-| Security | Spring Security 6, JWT (jjwt) |
+| Database | PostgreSQL, Spring Data JPA, Flyway |
+| Messaging | Apache Kafka, Spring Kafka, Debezium CDC |
+| Cache | Redis, Spring Data Redis |
+| Security | Spring Security, JWT (jjwt) |
 | Payments | Stripe Java SDK |
 | Excel | Apache POI |
 | Resilience | Resilience4j (circuit breaker, retry, time limiter) |
@@ -80,7 +80,7 @@ Full architecture documentation is hosted as an HTML site via **GitHub Pages**:
 
 ### Prerequisites
 
-- Java 21+
+- Java 25+
 - Docker and Docker Compose
 - Gradle 8+ (or use the included wrapper)
 
