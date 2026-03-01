@@ -19,7 +19,7 @@
 <div class="site-header">
   <span class="tag">REST API</span>
   <h1>API <span>Overview</span></h1>
-  <p>All endpoints are accessed through the API Gateway (port 8080). JWT required unless marked as public.</p>
+  <p>All endpoints are accessed through the API Gateway (port 8080). JWT is validated at the Gateway and user identity is forwarded as headers (X-User-Id, X-User-Role, X-User-Email) to downstream services.</p>
 </div>
 
 <div class="page-content">
@@ -59,9 +59,9 @@
     </table>
   </div>
 
-  <!-- Warehouse Service -->
+  <!-- Inventory Service -->
   <div class="section">
-    <div class="section-title">Warehouse Service — Warehouses</div>
+    <div class="section-title">Inventory Service — Warehouses</div>
     <table class="data-table">
       <thead>
         <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
@@ -79,7 +79,7 @@
   </div>
 
   <div class="section">
-    <div class="section-title">Warehouse Service — Excel Import</div>
+    <div class="section-title">Inventory Service — Excel Import (Warehouse Blueprint)</div>
     <table class="data-table">
       <thead>
         <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
@@ -92,7 +92,7 @@
   </div>
 
   <div class="section">
-    <div class="section-title">Warehouse Service — Zones, Rooms &amp; Categories</div>
+    <div class="section-title">Inventory Service — Zones, Rooms &amp; Categories</div>
     <table class="data-table">
       <thead>
         <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
@@ -111,28 +111,8 @@
     </table>
   </div>
 
-  <!-- Booking Service -->
   <div class="section">
-    <div class="section-title">Booking Service</div>
-    <table class="data-table">
-      <thead>
-        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
-      </thead>
-      <tbody>
-        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/customer/bookings</td><td class="access">Customer</td><td class="desc">Create booking request (checks availability via Warehouse Service + Redis lock)</td></tr>
-        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/customer/bookings</td><td class="access">Customer</td><td class="desc">List own bookings</td></tr>
-        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/customer/bookings/{id}</td><td class="access">Customer</td><td class="desc">Get booking details</td></tr>
-        <tr><td><span class="method method-patch">PATCH</span></td><td class="endpoint">/customer/bookings/{id}/cancel</td><td class="access">Customer</td><td class="desc">Cancel a booking</td></tr>
-        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/owner/bookings</td><td class="access">Warehouse Owner</td><td class="desc">List bookings for own warehouses</td></tr>
-        <tr><td><span class="method method-patch">PATCH</span></td><td class="endpoint">/owner/bookings/{id}/confirm</td><td class="access">Warehouse Owner</td><td class="desc">Confirm a pending booking</td></tr>
-        <tr><td><span class="method method-patch">PATCH</span></td><td class="endpoint">/owner/bookings/{id}/reject</td><td class="access">Warehouse Owner</td><td class="desc">Reject a pending booking</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Goods Service -->
-  <div class="section">
-    <div class="section-title">Goods Service — Import</div>
+    <div class="section-title">Inventory Service — Goods Import</div>
     <table class="data-table">
       <thead>
         <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
@@ -148,7 +128,7 @@
   </div>
 
   <div class="section">
-    <div class="section-title">Goods Service — Receipt</div>
+    <div class="section-title">Inventory Service — Goods Receipt</div>
     <table class="data-table">
       <thead>
         <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
@@ -156,6 +136,41 @@
       <tbody>
         <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/staff/goods/receipts</td><td class="access">Staff</td><td class="desc">Create goods receipt when goods arrive physically</td></tr>
         <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/staff/goods/receipts/{id}/items</td><td class="access">Staff</td><td class="desc">Record per-item receipt (condition, qty discrepancy)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Reservation Service -->
+  <div class="section">
+    <div class="section-title">Reservation Service — Bookings</div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/customer/bookings</td><td class="access">Customer</td><td class="desc">Create booking request (checks availability via Inventory Service + Redis lock)</td></tr>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/customer/bookings</td><td class="access">Customer</td><td class="desc">List own bookings</td></tr>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/customer/bookings/{id}</td><td class="access">Customer</td><td class="desc">Get booking details</td></tr>
+        <tr><td><span class="method method-patch">PATCH</span></td><td class="endpoint">/customer/bookings/{id}/cancel</td><td class="access">Customer</td><td class="desc">Cancel a booking</td></tr>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/owner/bookings</td><td class="access">Warehouse Owner</td><td class="desc">List bookings for own warehouses</td></tr>
+        <tr><td><span class="method method-patch">PATCH</span></td><td class="endpoint">/owner/bookings/{id}/confirm</td><td class="access">Warehouse Owner</td><td class="desc">Confirm a pending booking</td></tr>
+        <tr><td><span class="method method-patch">PATCH</span></td><td class="endpoint">/owner/bookings/{id}/reject</td><td class="access">Warehouse Owner</td><td class="desc">Reject a pending booking</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Reservation Service — Billing</div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/customer/invoices</td><td class="access">Customer</td><td class="desc">List own invoices</td></tr>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/customer/invoices/{id}/pay</td><td class="access">Customer</td><td class="desc">Create Stripe Checkout session</td></tr>
+        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/owner/invoices</td><td class="access">Warehouse Owner</td><td class="desc">List invoices for own warehouses</td></tr>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/owner/invoices/{id}/credit-note</td><td class="access">Warehouse Owner</td><td class="desc">Issue credit note against invoice</td></tr>
+        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/webhooks/stripe</td><td class="access">Public (Stripe signature)</td><td class="desc">Handle Stripe payment success/failure</td></tr>
       </tbody>
     </table>
   </div>
@@ -190,23 +205,6 @@
     </table>
   </div>
 
-  <!-- Billing Service -->
-  <div class="section">
-    <div class="section-title">Billing Service</div>
-    <table class="data-table">
-      <thead>
-        <tr><th>Method</th><th>Endpoint</th><th>Access</th><th>Description</th></tr>
-      </thead>
-      <tbody>
-        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/customer/invoices</td><td class="access">Customer</td><td class="desc">List own invoices</td></tr>
-        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/customer/invoices/{id}/pay</td><td class="access">Customer</td><td class="desc">Create Stripe Checkout session</td></tr>
-        <tr><td><span class="method method-get">GET</span></td><td class="endpoint">/owner/invoices</td><td class="access">Warehouse Owner</td><td class="desc">List invoices for own warehouses</td></tr>
-        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/owner/invoices/{id}/credit-note</td><td class="access">Warehouse Owner</td><td class="desc">Issue credit note against invoice</td></tr>
-        <tr><td><span class="method method-post">POST</span></td><td class="endpoint">/webhooks/stripe</td><td class="access">Public (Stripe signature)</td><td class="desc">Handle Stripe payment success/failure</td></tr>
-      </tbody>
-    </table>
-  </div>
-
   <!-- Platform Service -->
   <div class="section">
     <div class="section-title">Platform Service — Notifications</div>
@@ -234,9 +232,9 @@
         <tr><th>Service</th><th>Endpoint</th><th>Called By</th><th>Description</th></tr>
       </thead>
       <tbody>
-        <tr><td><span class="badge badge-service">Warehouse</span></td><td class="endpoint">/internal/rooms/{id}/availability</td><td>Booking</td><td class="desc">Check room availability for date range</td></tr>
-        <tr><td><span class="badge badge-service">Booking</span></td><td class="endpoint">/internal/bookings/{id}/status</td><td>Goods</td><td class="desc">Verify booking is active</td></tr>
-        <tr><td><span class="badge badge-service">Goods</span></td><td class="endpoint">/internal/goods-items/{id}/available-qty</td><td>Delivery</td><td class="desc">Check available quantity for picking</td></tr>
+        <tr><td><span class="badge badge-service">Inventory</span></td><td class="endpoint">/internal/rooms/{id}/availability</td><td>Reservation</td><td class="desc">Check room availability for date range</td></tr>
+        <tr><td><span class="badge badge-service">Reservation</span></td><td class="endpoint">/internal/bookings/{id}/status</td><td>Inventory</td><td class="desc">Verify booking is active (for goods import)</td></tr>
+        <tr><td><span class="badge badge-service">Inventory</span></td><td class="endpoint">/internal/goods-items/{id}/available-qty</td><td>Delivery</td><td class="desc">Check available quantity for picking</td></tr>
       </tbody>
     </table>
   </div>

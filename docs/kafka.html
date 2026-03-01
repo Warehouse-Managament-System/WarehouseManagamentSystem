@@ -56,17 +56,17 @@ Dead Letter Topic (topic-name.DLT)
     </div>
   </div>
 
-  <!-- Booking Events -->
+  <!-- Reservation Events -->
   <div class="section">
-    <div class="section-title">Booking Events</div>
+    <div class="section-title">Reservation Events</div>
     <div class="kafka-grid">
       <div class="kafka-event">
         <span class="ke-topic">booking.confirmed</span>
-        <span class="ke-flow"><strong>Producer:</strong> Booking Service<br><strong>Consumers:</strong> Billing (generate invoice), Platform (notify customer + owner)<br><strong>Trigger:</strong> Owner confirms a pending booking</span>
+        <span class="ke-flow"><strong>Producer:</strong> Reservation Service<br><strong>Consumers:</strong> Platform (notify customer + owner)<br><strong>Trigger:</strong> Owner confirms a pending booking<br><strong>Note:</strong> Invoice generation is now internal to Reservation Service (same DB transaction)</span>
       </div>
       <div class="kafka-event">
         <span class="ke-topic">booking.cancelled</span>
-        <span class="ke-flow"><strong>Producer:</strong> Booking Service<br><strong>Consumers:</strong> Warehouse (release room), Platform (notify customer + owner)<br><strong>Trigger:</strong> Customer or owner cancels booking</span>
+        <span class="ke-flow"><strong>Producer:</strong> Reservation Service<br><strong>Consumers:</strong> Inventory (release room), Platform (notify customer + owner)<br><strong>Trigger:</strong> Customer or owner cancels booking</span>
       </div>
       <div class="kafka-event">
         <span class="ke-topic">booking.expiry.soon</span>
@@ -74,30 +74,46 @@ Dead Letter Topic (topic-name.DLT)
       </div>
       <div class="kafka-event">
         <span class="ke-topic">booking.expired</span>
-        <span class="ke-flow"><strong>Producer:</strong> Platform (Scheduler)<br><strong>Consumers:</strong> Warehouse (release room), Booking (update status), Platform (notify)<br><strong>Trigger:</strong> Nightly batch job detects past-due bookings</span>
+        <span class="ke-flow"><strong>Producer:</strong> Platform (Scheduler)<br><strong>Consumers:</strong> Inventory (release room), Reservation (update status), Platform (notify)<br><strong>Trigger:</strong> Nightly batch job detects past-due bookings</span>
+      </div>
+      <div class="kafka-event">
+        <span class="ke-topic">invoice.generated</span>
+        <span class="ke-flow"><strong>Producer:</strong> Reservation Service<br><strong>Consumers:</strong> Platform (email customer with payment link)<br><strong>Trigger:</strong> Invoice created after booking confirmation (internal to Reservation Service)</span>
+      </div>
+      <div class="kafka-event">
+        <span class="ke-topic">payment.success</span>
+        <span class="ke-flow"><strong>Producer:</strong> Reservation Service<br><strong>Consumers:</strong> Platform (email receipt)<br><strong>Trigger:</strong> Stripe webhook confirms payment<br><strong>Note:</strong> Booking activation is now internal to Reservation Service (same DB transaction)</span>
+      </div>
+      <div class="kafka-event">
+        <span class="ke-topic">payment.failed</span>
+        <span class="ke-flow"><strong>Producer:</strong> Reservation Service<br><strong>Consumers:</strong> Platform (email customer with failure reason)<br><strong>Trigger:</strong> Stripe webhook reports payment failure</span>
+      </div>
+      <div class="kafka-event">
+        <span class="ke-topic">invoice.overdue</span>
+        <span class="ke-flow"><strong>Producer:</strong> Platform (Scheduler)<br><strong>Consumers:</strong> Reservation (mark invoice overdue), Platform (notify customer + owner)<br><strong>Trigger:</strong> Daily batch job detects past-due invoices</span>
       </div>
     </div>
   </div>
 
-  <!-- Goods Events -->
+  <!-- Inventory Events -->
   <div class="section">
-    <div class="section-title">Goods Events</div>
+    <div class="section-title">Inventory Events</div>
     <div class="kafka-grid">
       <div class="kafka-event">
         <span class="ke-topic">goods.import.pending</span>
-        <span class="ke-flow"><strong>Producer:</strong> Goods Service<br><strong>Consumers:</strong> Platform (notify owner to approve)<br><strong>Trigger:</strong> Customer uploads goods Excel</span>
+        <span class="ke-flow"><strong>Producer:</strong> Inventory Service<br><strong>Consumers:</strong> Platform (notify owner to approve)<br><strong>Trigger:</strong> Customer uploads goods Excel</span>
       </div>
       <div class="kafka-event">
         <span class="ke-topic">goods.approved</span>
-        <span class="ke-flow"><strong>Producer:</strong> Goods Service<br><strong>Consumers:</strong> Platform (email customer with arrival deadline)<br><strong>Trigger:</strong> Owner approves goods import</span>
+        <span class="ke-flow"><strong>Producer:</strong> Inventory Service<br><strong>Consumers:</strong> Platform (email customer with arrival deadline)<br><strong>Trigger:</strong> Owner approves goods import</span>
       </div>
       <div class="kafka-event">
         <span class="ke-topic">goods.rejected</span>
-        <span class="ke-flow"><strong>Producer:</strong> Goods Service<br><strong>Consumers:</strong> Platform (email customer with reason)<br><strong>Trigger:</strong> Owner rejects goods import</span>
+        <span class="ke-flow"><strong>Producer:</strong> Inventory Service<br><strong>Consumers:</strong> Platform (email customer with reason)<br><strong>Trigger:</strong> Owner rejects goods import</span>
       </div>
       <div class="kafka-event">
         <span class="ke-topic">goods.discrepancy</span>
-        <span class="ke-flow"><strong>Producer:</strong> Goods Service<br><strong>Consumers:</strong> Platform (email customer about qty mismatch)<br><strong>Trigger:</strong> Staff receives goods with quantity &ne; expected</span>
+        <span class="ke-flow"><strong>Producer:</strong> Inventory Service<br><strong>Consumers:</strong> Platform (email customer about qty mismatch)<br><strong>Trigger:</strong> Staff receives goods with quantity &ne; expected</span>
       </div>
     </div>
   </div>
@@ -117,29 +133,6 @@ Dead Letter Topic (topic-name.DLT)
       <div class="kafka-event">
         <span class="ke-topic">delivery.checkpoint</span>
         <span class="ke-flow"><strong>Producer:</strong> Delivery Service<br><strong>Consumers:</strong> Platform (email customer with status update)<br><strong>Trigger:</strong> Agent adds shipment checkpoint</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Billing Events -->
-  <div class="section">
-    <div class="section-title">Billing Events</div>
-    <div class="kafka-grid">
-      <div class="kafka-event">
-        <span class="ke-topic">invoice.generated</span>
-        <span class="ke-flow"><strong>Producer:</strong> Billing Service<br><strong>Consumers:</strong> Platform (email customer with payment link)<br><strong>Trigger:</strong> Invoice created after booking.confirmed</span>
-      </div>
-      <div class="kafka-event">
-        <span class="ke-topic">payment.success</span>
-        <span class="ke-flow"><strong>Producer:</strong> Billing Service<br><strong>Consumers:</strong> Booking (activate booking), Platform (email receipt)<br><strong>Trigger:</strong> Stripe webhook confirms payment</span>
-      </div>
-      <div class="kafka-event">
-        <span class="ke-topic">payment.failed</span>
-        <span class="ke-flow"><strong>Producer:</strong> Billing Service<br><strong>Consumers:</strong> Platform (email customer with failure reason)<br><strong>Trigger:</strong> Stripe webhook reports payment failure</span>
-      </div>
-      <div class="kafka-event">
-        <span class="ke-topic">invoice.overdue</span>
-        <span class="ke-flow"><strong>Producer:</strong> Platform (Scheduler)<br><strong>Consumers:</strong> Billing (mark invoice overdue), Platform (notify customer + owner)<br><strong>Trigger:</strong> Daily batch job detects past-due invoices</span>
       </div>
     </div>
   </div>
@@ -211,11 +204,27 @@ Dead Letter Topic (topic-name.DLT)
         <tr><th>Consumer Group</th><th>Service</th><th>Topics Consumed</th></tr>
       </thead>
       <tbody>
-        <tr><td class="mono">billing-service</td><td>Billing Service</td><td class="desc">booking.confirmed, invoice.overdue</td></tr>
-        <tr><td class="mono">booking-service</td><td>Booking Service</td><td class="desc">payment.success, booking.expired</td></tr>
-        <tr><td class="mono">warehouse-service</td><td>Warehouse Service</td><td class="desc">booking.cancelled, booking.expired</td></tr>
+        <tr><td class="mono">reservation-service</td><td>Reservation Service</td><td class="desc">booking.expired, invoice.overdue</td></tr>
+        <tr><td class="mono">inventory-service</td><td>Inventory Service</td><td class="desc">booking.cancelled, booking.expired</td></tr>
         <tr><td class="mono">platform-notifications</td><td>Platform Service</td><td class="desc">ALL topics (notifications + email)</td></tr>
         <tr><td class="mono">platform-audit</td><td>Platform Service</td><td class="desc">ALL topics (audit logging)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Eliminated Events -->
+  <div class="section">
+    <div class="section-title">Events Eliminated by Service Merges</div>
+    <div class="explanation">
+      The following cross-service event flows were eliminated by merging services. These operations are now internal method calls within the same service and database transaction.
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr><th>Event</th><th>Was</th><th>Now</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">booking.confirmed &rarr; Billing</td><td class="desc">Billing Service consumed to generate invoice</td><td class="desc">Internal to Reservation Service (same transaction)</td></tr>
+        <tr><td class="mono">payment.success &rarr; Booking</td><td class="desc">Booking Service consumed to activate booking</td><td class="desc">Internal to Reservation Service (same transaction)</td></tr>
       </tbody>
     </table>
   </div>

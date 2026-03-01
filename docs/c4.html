@@ -4,93 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WMS — Full C4 Architecture</title>
+<link rel="stylesheet" href="style.css">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+  /* C4-SPECIFIC STYLES — kept inline because they are unique to this page */
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg: #f4f6f9;
-    --white: #ffffff;
-    --border: #e2e6ed;
-    --text: #1a1d23;
-    --muted: #6b7280;
-    --mono: 'JetBrains Mono', monospace;
-    --sans: 'Outfit', sans-serif;
-
-    --person-bg: #e8f4f8;
-    --person-border: #1a6b8a;
-    --person-text: #1a6b8a;
-
-    --system-bg: #e8f5ee;
-    --system-border: #1a5c2e;
-    --system-text: #1a5c2e;
-
-    --external-bg: #fdf5e0;
-    --external-border: #8a6a1a;
-    --external-text: #8a6a1a;
-
-    --container-bg: #f0ecfc;
-    --container-border: #4a2d8a;
-    --container-text: #4a2d8a;
-
-    --component-bg: #fceaea;
-    --component-border: #8a1a1a;
-    --component-text: #8a1a1a;
-
-    --db-bg: #e8f0f8;
-    --db-border: #1a4a8a;
-    --db-text: #1a4a8a;
-
-    --kafka-bg: #fff3e8;
-    --kafka-border: #c26a1a;
-    --kafka-text: #c26a1a;
-
-    --batch-bg: #fefbe8;
-    --batch-border: #8a7a1a;
-    --batch-text: #8a7a1a;
-  }
-
-  body {
-    background: var(--bg);
-    font-family: var(--sans);
-    color: var(--text);
-    padding: 0;
-  }
-
-  /* HEADER */
-  .site-header {
-    background: var(--text);
-    color: white;
-    padding: 40px 48px;
-  }
-
-  .site-header .tag {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: #6b7280;
-    letter-spacing: 3px;
-    margin-bottom: 12px;
-    display: block;
-  }
-
-  .site-header h1 {
-    font-size: 40px;
-    font-weight: 800;
-    letter-spacing: -1px;
-    margin-bottom: 8px;
-  }
-
-  .site-header h1 span { color: #00e5a0; }
-
-  .site-header p {
-    color: #9ca3af;
-    font-size: 15px;
-    max-width: 600px;
-    line-height: 1.6;
-  }
-
-  /* NAV */
+  /* NAV TABS (L1/L2/L3/L4 switcher) */
   .nav-bar {
     background: var(--white);
     border-bottom: 1px solid var(--border);
@@ -159,44 +77,6 @@
     line-height: 1.7;
     max-width: 700px;
   }
-
-  /* SECTION */
-  .section {
-    margin-bottom: 48px;
-  }
-
-  .section-title {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .section-title::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
-
-  /* EXPLANATION BOX */
-  .explanation {
-    background: var(--white);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 24px;
-    margin-bottom: 32px;
-    font-size: 14px;
-    line-height: 1.8;
-    color: var(--muted);
-  }
-
-  .explanation strong { color: var(--text); }
 
   /* NODE CARDS */
   .node-card {
@@ -610,35 +490,6 @@
     flex-shrink: 0;
   }
 
-  /* WHAT/WHY boxes */
-  .info-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 32px;
-  }
-
-  .info-box {
-    background: var(--white);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 20px;
-  }
-
-  .info-box h4 {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: 2px;
-    color: var(--muted);
-    margin-bottom: 10px;
-  }
-
-  .info-box p {
-    font-size: 13px;
-    line-height: 1.7;
-    color: var(--text);
-  }
-
   /* VERTICAL ARROW */
   .v-arrow {
     text-align: center;
@@ -698,16 +549,53 @@
     gap: 12px;
     margin-top: 16px;
   }
+
+  /* PACKAGE LABEL inside component sections */
+  .package-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--muted);
+    background: var(--bg);
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 6px 14px;
+    margin-bottom: 12px;
+    display: inline-block;
+  }
+
+  /* ELIMINATED label */
+  .eliminated {
+    text-decoration: line-through;
+    opacity: 0.5;
+  }
+
+  /* DIAGRAM TITLE (C4 standard) */
+  .diagram-title {
+    margin-top: 16px;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    border-top: 1px solid var(--border);
+  }
+  .diagram-title .dt-sub {
+    font-weight: 400;
+    font-size: 12px;
+    color: var(--muted);
+    display: block;
+    margin-top: 4px;
+  }
 </style>
 </head>
 <body>
 
-<nav style="background:#1a1d23;padding:0 48px;display:flex;gap:0;border-bottom:2px solid #00e5a0;">
-  <a href="index.html" style="padding:14px 20px;text-decoration:none;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:#9ca3af;">Overview</a>
-  <a href="c4.html" style="padding:14px 20px;text-decoration:none;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:#00e5a0;border-bottom:3px solid #00e5a0;">C4 Architecture</a>
-  <a href="database.html" style="padding:14px 20px;text-decoration:none;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:#9ca3af;">Database</a>
-  <a href="api.html" style="padding:14px 20px;text-decoration:none;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:#9ca3af;">API</a>
-  <a href="kafka.html" style="padding:14px 20px;text-decoration:none;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;color:#9ca3af;">Kafka Events</a>
+<nav class="site-nav">
+  <a href="index.html">Overview</a>
+  <a href="c4.html" class="active">C4 Architecture</a>
+  <a href="database.html">Database</a>
+  <a href="api.html">API</a>
+  <a href="kafka.html">Kafka Events</a>
 </nav>
 
 <!-- SITE HEADER -->
@@ -757,31 +645,31 @@
         <div class="actors-col">
           <div class="node-card person-card">
             <span class="n-icon">&#x1F464;</span>
-            <span class="n-type">Person</span>
+            <span class="n-type">[Person]</span>
             <span class="n-name">Warehouse Owner</span>
             <span class="n-desc">Registers warehouses, configures zones and rooms, manages staff and delivery agents, approves bookings and goods</span>
           </div>
           <div class="node-card person-card">
             <span class="n-icon">&#x1F3EA;</span>
-            <span class="n-type">Person</span>
+            <span class="n-type">[Person]</span>
             <span class="n-name">Customer</span>
             <span class="n-desc">Browses warehouses, books storage, uploads goods, requests and tracks deliveries, pays invoices</span>
           </div>
           <div class="node-card person-card">
             <span class="n-icon">&#x1F477;</span>
-            <span class="n-type">Person</span>
+            <span class="n-type">[Person]</span>
             <span class="n-name">Staff</span>
             <span class="n-desc">Receives goods, picks and packs orders, notifies delivery agents when goods are ready</span>
           </div>
           <div class="node-card person-card">
             <span class="n-icon">&#x1F69B;</span>
-            <span class="n-type">Person</span>
+            <span class="n-type">[Person]</span>
             <span class="n-name">Delivery Agent</span>
             <span class="n-desc">Claims deliveries, picks up goods from warehouse, updates shipment checkpoints, delivers to customer</span>
           </div>
           <div class="node-card person-card">
             <span class="n-icon">&#x1F510;</span>
-            <span class="n-type">Person</span>
+            <span class="n-type">[Person]</span>
             <span class="n-name">Super Admin</span>
             <span class="n-desc">Reviews and approves warehouse owner registrations, manages platform-level access</span>
           </div>
@@ -789,33 +677,33 @@
 
         <!-- CENTER -->
         <div class="center-system">
-          <div class="arrow-label">&larr; Uses via REST API / HTTPS</div>
+          <div class="arrow-label">&larr; Browses warehouses, books storage, uploads goods, pays invoices, and requests deliveries using [REST/HTTPS]</div>
           <div class="center-node system-card" style="border-width:3px;">
             <span class="n-icon" style="font-size:48px;">&#x1F3ED;</span>
-            <span class="n-type" style="font-size:11px; letter-spacing:2px;">Software System</span>
+            <span class="n-type" style="font-size:11px; letter-spacing:2px;">[Software System]</span>
             <span class="n-name" style="font-size:20px;">WarehouseManagement<br>System</span>
             <span class="n-desc" style="font-size:13px; margin-top:12px; display:block;">An Airbnb-style B2B SaaS platform. Warehouse owners list their storage facilities. Business customers browse, book space, store goods, and request deliveries.</span>
           </div>
-          <div class="arrow-label">Integrates with external systems &rarr;</div>
+          <div class="arrow-label">Processes payments [Stripe SDK/HTTPS], sends emails [SMTP], imports/exports spreadsheets [Apache POI] &rarr;</div>
         </div>
 
         <!-- RIGHT — External -->
         <div class="actors-col">
           <div class="node-card external-card">
             <span class="n-icon">&#x1F4B3;</span>
-            <span class="n-type">External System</span>
+            <span class="n-type">[External System]</span>
             <span class="n-name">Stripe</span>
             <span class="n-desc">Payment processing for booking and delivery invoices. Webhooks confirm payment status back to the system.</span>
           </div>
           <div class="node-card external-card">
             <span class="n-icon">&#x1F4E7;</span>
-            <span class="n-type">External System</span>
+            <span class="n-type">[External System]</span>
             <span class="n-name">SMTP / SendGrid</span>
             <span class="n-desc">Transactional email delivery. Sends booking confirmations, delivery updates, invoice notifications, and payment receipts.</span>
           </div>
           <div class="node-card external-card">
             <span class="n-icon">&#x1F4CA;</span>
-            <span class="n-type">External Format</span>
+            <span class="n-type">[External Format]</span>
             <span class="n-name">Excel / CSV</span>
             <span class="n-desc">Used by warehouse owners to define warehouse blueprints (zones, rooms, pricing) and by customers to upload goods lists.</span>
           </div>
@@ -823,6 +711,7 @@
 
       </div>
     </div>
+    <div class="diagram-title">System Context diagram for WarehouseManagementSystem<span class="dt-sub">Shows the system in its environment with the people and external systems it interacts with</span></div>
   </div>
 
   <!-- LEGEND -->
@@ -878,11 +767,11 @@
   <div class="info-grid">
     <div class="info-box">
       <h4>WHAT THIS DIAGRAM SHOWS</h4>
-      <p>The deployable pieces inside the system boundary: 7 Spring Boot microservices (each with its own PostgreSQL database), Spring Cloud infrastructure (Eureka, Config Server, API Gateway), Apache Kafka with Transactional Outbox pattern, Redis cache, and Zipkin for distributed tracing.</p>
+      <p>The deployable pieces inside the system boundary: 5 Spring Boot microservices (each with its own PostgreSQL database), Spring Cloud infrastructure (Eureka, Config Server, API Gateway), Apache Kafka with Transactional Outbox pattern, Redis cache, and OpenTelemetry + Grafana for distributed observability.</p>
     </div>
     <div class="info-box">
       <h4>KEY ARCHITECTURAL DECISION</h4>
-      <p><strong>Microservices with Database-Per-Service.</strong> Each service owns its data exclusively — no shared databases. Inter-service communication uses Kafka (via Transactional Outbox pattern) for async events and REST/HTTP with Resilience4j circuit breakers for synchronous queries. Spring Cloud Eureka for service discovery, Config Server for centralized configuration, Micrometer + Zipkin for distributed tracing.</p>
+      <p><strong>Microservices with Database-Per-Service.</strong> Each service owns its data exclusively — no shared databases. Inter-service communication uses Kafka (via Transactional Outbox pattern) for async events and REST/HTTP with Resilience4j circuit breakers for synchronous queries. Spring Cloud Eureka for service discovery, Config Server for centralized configuration. API Gateway performs centralized JWT validation and forwards identity headers (X-User-Id, X-User-Role, X-User-Email) — downstream services never parse JWTs. OpenTelemetry exports traces via OTLP to Grafana Tempo, with Grafana Loki for centralized logging and Grafana for dashboards.</p>
     </div>
   </div>
 
@@ -898,27 +787,27 @@
           <div style="display:flex; flex-direction:column; gap:12px;">
             <div class="node-card person-card" style="padding:14px;">
               <span class="n-icon" style="font-size:20px;">&#x1F464;</span>
-              <span class="n-type" style="font-size:8px;">Person</span>
+              <span class="n-type" style="font-size:8px;">[Person]</span>
               <span class="n-name" style="font-size:12px;">Warehouse Owner</span>
             </div>
             <div class="node-card person-card" style="padding:14px;">
               <span class="n-icon" style="font-size:20px;">&#x1F3EA;</span>
-              <span class="n-type" style="font-size:8px;">Person</span>
+              <span class="n-type" style="font-size:8px;">[Person]</span>
               <span class="n-name" style="font-size:12px;">Customer</span>
             </div>
             <div class="node-card person-card" style="padding:14px;">
               <span class="n-icon" style="font-size:20px;">&#x1F477;</span>
-              <span class="n-type" style="font-size:8px;">Person</span>
+              <span class="n-type" style="font-size:8px;">[Person]</span>
               <span class="n-name" style="font-size:12px;">Staff</span>
             </div>
             <div class="node-card person-card" style="padding:14px;">
               <span class="n-icon" style="font-size:20px;">&#x1F69B;</span>
-              <span class="n-type" style="font-size:8px;">Person</span>
+              <span class="n-type" style="font-size:8px;">[Person]</span>
               <span class="n-name" style="font-size:12px;">Delivery Agent</span>
             </div>
             <div class="node-card person-card" style="padding:14px;">
               <span class="n-icon" style="font-size:20px;">&#x1F510;</span>
-              <span class="n-type" style="font-size:8px;">Person</span>
+              <span class="n-type" style="font-size:8px;">[Person]</span>
               <span class="n-name" style="font-size:12px;">Super Admin</span>
             </div>
           </div>
@@ -926,80 +815,60 @@
 
         <!-- CENTER — System Boundary -->
         <div>
-          <div style="font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:2px; margin-bottom:12px; text-align:center;">WAREHOUSEMANAGEMENTSYSTEM [BOUNDARY]</div>
+          <div style="font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:2px; margin-bottom:12px; text-align:center;">WAREHOUSEMANAGEMENTSYSTEM [SOFTWARE SYSTEM]</div>
           <div class="boundary-box">
-            <span class="boundary-label">SYSTEM BOUNDARY</span>
+            <span class="boundary-label">WarehouseManagementSystem [Software System]</span>
             <div class="boundary-inner">
 
               <!-- API Gateway -->
               <div class="node-card system-card" style="border-width:3px;">
                 <span class="n-icon">&#x1F6E1;&#xFE0F;</span>
-                <span class="n-type">Container — API Gateway</span>
+                <span class="n-type">[Container: Spring Cloud Gateway]</span>
                 <span class="n-name">API Gateway</span>
-                <span class="n-desc">Single entry point for all client requests. Routes to appropriate microservice. Handles JWT validation, rate limiting, and request routing.</span>
+                <span class="n-desc">Single entry point for all client requests. Validates JWT tokens centrally, extracts user identity, and forwards X-User-Id, X-User-Role, X-User-Email headers to downstream services. Routes requests to the appropriate microservice. Only the Gateway and Identity Service have the jjwt dependency.</span>
                 <span class="n-tech">Spring Cloud Gateway &middot; Port 8080</span>
               </div>
 
               <div class="v-arrow">&darr;</div>
 
-              <!-- Microservices Row -->
-              <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px;">
+              <!-- Microservices Row — 5 services -->
+              <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:10px;">
 
                 <div class="service-card system-card">
                   <span class="s-icon">&#x1F510;</span>
-                  <span class="s-type">Microservice</span>
+                  <span class="s-type">[Container: Spring Boot]</span>
                   <span class="s-name">Identity Service</span>
-                  <span class="s-desc">Auth, users, all profiles, JWT, Super Admin ops</span>
+                  <span class="s-desc">Auth, users, all profiles, JWT generation, Super Admin ops</span>
                   <span class="s-tech">Port 8081</span>
                 </div>
 
                 <div class="service-card system-card">
-                  <span class="s-icon">&#x1F3ED;</span>
-                  <span class="s-type">Microservice</span>
-                  <span class="s-name">Warehouse Service</span>
-                  <span class="s-desc">Warehouses, zones, rooms, categories, Excel import</span>
+                  <span class="s-icon">&#x1F4E6;</span>
+                  <span class="s-type">[Container: Spring Boot]</span>
+                  <span class="s-name">Inventory Service</span>
+                  <span class="s-desc">Warehouses, zones, rooms, categories, goods import, receipts, Excel processing</span>
                   <span class="s-tech">Port 8082</span>
                 </div>
 
                 <div class="service-card system-card">
                   <span class="s-icon">&#x1F4C5;</span>
-                  <span class="s-type">Microservice</span>
-                  <span class="s-name">Booking Service</span>
-                  <span class="s-desc">Booking lifecycle, availability checks, expiry tracking</span>
+                  <span class="s-type">[Container: Spring Boot]</span>
+                  <span class="s-name">Reservation Service</span>
+                  <span class="s-desc">Booking lifecycle, invoicing, Stripe payments, credit notes</span>
                   <span class="s-tech">Port 8083</span>
                 </div>
 
                 <div class="service-card system-card">
-                  <span class="s-icon">&#x1F4E6;</span>
-                  <span class="s-type">Microservice</span>
-                  <span class="s-name">Goods Service</span>
-                  <span class="s-desc">Goods import, items, receipts, discrepancy handling</span>
-                  <span class="s-tech">Port 8084</span>
-                </div>
-
-              </div>
-
-              <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;">
-
-                <div class="service-card system-card">
                   <span class="s-icon">&#x1F69A;</span>
-                  <span class="s-type">Microservice</span>
+                  <span class="s-type">[Container: Spring Boot]</span>
                   <span class="s-name">Delivery Service</span>
                   <span class="s-desc">Delivery requests, picking, shipments, checkpoints</span>
                   <span class="s-tech">Port 8085</span>
                 </div>
 
                 <div class="service-card system-card">
-                  <span class="s-icon">&#x1F4B3;</span>
-                  <span class="s-type">Microservice</span>
-                  <span class="s-name">Billing Service</span>
-                  <span class="s-desc">Invoices, Stripe payments, credit notes</span>
-                  <span class="s-tech">Port 8086</span>
-                </div>
-
-                <div class="service-card system-card">
                   <span class="s-icon">&#x1F514;</span>
-                  <span class="s-type">Microservice</span>
+                  <span class="s-type">[Container: Spring Boot]</span>
                   <span class="s-name">Platform Service</span>
                   <span class="s-desc">Notifications, audit logs, scheduled batch jobs</span>
                   <span class="s-tech">Port 8087</span>
@@ -1014,7 +883,7 @@
 
                 <div class="node-card container-card">
                   <span class="n-icon">&#x1F50D;</span>
-                  <span class="n-type">Container — Service Discovery</span>
+                  <span class="n-type">[Container: Spring Cloud Netflix Eureka]</span>
                   <span class="n-name">Eureka Server</span>
                   <span class="n-desc">Service registry. All microservices register on startup. API Gateway and Feign clients discover services by name.</span>
                   <span class="n-tech">Spring Cloud Netflix Eureka &middot; Port 8761</span>
@@ -1022,7 +891,7 @@
 
                 <div class="node-card container-card">
                   <span class="n-icon">&#x2699;&#xFE0F;</span>
-                  <span class="n-type">Container — Config</span>
+                  <span class="n-type">[Container: Spring Cloud Config]</span>
                   <span class="n-name">Config Server</span>
                   <span class="n-desc">Centralized configuration for all services. Stores application.yml per environment. Services fetch config on startup.</span>
                   <span class="n-tech">Spring Cloud Config &middot; Port 8888</span>
@@ -1030,10 +899,10 @@
 
                 <div class="node-card container-card">
                   <span class="n-icon">&#x1F52C;</span>
-                  <span class="n-type">Container — Tracing</span>
-                  <span class="n-name">Zipkin</span>
-                  <span class="n-desc">Distributed tracing. Every request gets a trace ID that flows across all services and Kafka events. Visualizes latency and call chains.</span>
-                  <span class="n-tech">Zipkin &middot; Micrometer Tracing &middot; Port 9411</span>
+                  <span class="n-type">[Container: Grafana Stack]</span>
+                  <span class="n-name">Grafana Stack</span>
+                  <span class="n-desc">Grafana Tempo for distributed tracing (OTLP ingestion), Grafana Loki for centralized log aggregation, Grafana dashboards for visualization.</span>
+                  <span class="n-tech">Tempo :3200 &middot; Loki :3100 &middot; Grafana :3000</span>
                 </div>
 
               </div>
@@ -1045,15 +914,15 @@
 
                 <div class="node-card db-card">
                   <span class="n-icon">&#x1F418;</span>
-                  <span class="n-type">Container — Databases</span>
+                  <span class="n-type">[Container: PostgreSQL 18]</span>
                   <span class="n-name">PostgreSQL (per service)</span>
                   <span class="n-desc">Each microservice has its own PostgreSQL database. No shared database access. Each DB includes an outbox_events table for the Transactional Outbox pattern.</span>
-                  <span class="n-tech">PostgreSQL 18 &middot; 7 databases</span>
+                  <span class="n-tech">PostgreSQL 18 &middot; 5 databases</span>
                 </div>
 
                 <div class="node-card kafka-card">
                   <span class="n-icon">&#x1F4E8;</span>
-                  <span class="n-type">Container — Message Broker</span>
+                  <span class="n-type">[Container: Apache Kafka 4]</span>
                   <span class="n-name">Apache Kafka</span>
                   <span class="n-desc">Async event bus. Events are never published directly — they flow through the Transactional Outbox pattern. Dead Letter Topics (DLT) capture failed messages. All consumers are idempotent.</span>
                   <span class="n-tech">Kafka 4 &middot; Port 9092</span>
@@ -1061,9 +930,9 @@
 
                 <div class="node-card container-card">
                   <span class="n-icon">&#x26A1;</span>
-                  <span class="n-type">Container — Cache</span>
+                  <span class="n-type">[Container: Redis 8]</span>
                   <span class="n-name">Redis</span>
-                  <span class="n-desc">Used by Booking Service for room availability locks to prevent double-booking on concurrent requests.</span>
+                  <span class="n-desc">Used by Reservation Service for room availability locks to prevent double-booking on concurrent requests.</span>
                   <span class="n-tech">Redis 8 &middot; Port 6379</span>
                 </div>
 
@@ -1078,21 +947,21 @@
           <div style="display:flex; flex-direction:column; gap:12px;">
             <div class="node-card external-card">
               <span class="n-icon">&#x1F4B3;</span>
-              <span class="n-type" style="font-size:8px;">External System</span>
+              <span class="n-type" style="font-size:8px;">[External System]</span>
               <span class="n-name" style="font-size:12px;">Stripe</span>
               <span class="n-desc" style="font-size:10px;">Payment checkout sessions and webhook callbacks</span>
               <span class="n-tech">Stripe SDK &middot; HTTPS</span>
             </div>
             <div class="node-card external-card">
               <span class="n-icon">&#x1F4E7;</span>
-              <span class="n-type" style="font-size:8px;">External System</span>
+              <span class="n-type" style="font-size:8px;">[External System]</span>
               <span class="n-name" style="font-size:12px;">SMTP / SendGrid</span>
               <span class="n-desc" style="font-size:10px;">Transactional email delivery</span>
               <span class="n-tech">JavaMailSender &middot; SMTP</span>
             </div>
             <div class="node-card external-card">
               <span class="n-icon">&#x1F4CA;</span>
-              <span class="n-type" style="font-size:8px;">External Format</span>
+              <span class="n-type" style="font-size:8px;">[External Format]</span>
               <span class="n-name" style="font-size:12px;">Excel / CSV</span>
               <span class="n-desc" style="font-size:10px;">Warehouse blueprint and goods list imports</span>
               <span class="n-tech">Apache POI &middot; OpenCSV</span>
@@ -1102,13 +971,14 @@
 
       </div>
     </div>
+    <div class="diagram-title">Container diagram for WarehouseManagementSystem<span class="dt-sub">Shows the containers that make up the system and how they interact</span></div>
   </div>
 
   <!-- LEGEND -->
   <div class="legend">
     <div class="legend-item"><div class="legend-box" style="background:var(--system-bg); border-color:var(--system-border);"></div> Microservice (Spring Boot)</div>
     <div class="legend-item"><div class="legend-box" style="background:var(--db-bg); border-color:var(--db-border);"></div> Database (per service)</div>
-    <div class="legend-item"><div class="legend-box" style="background:var(--container-bg); border-color:var(--container-border);"></div> Spring Cloud Infra / Cache</div>
+    <div class="legend-item"><div class="legend-box" style="background:var(--container-bg); border-color:var(--container-border);"></div> Spring Cloud Infra / Observability / Cache</div>
     <div class="legend-item"><div class="legend-box" style="background:var(--kafka-bg); border-color:var(--kafka-border);"></div> Message Broker</div>
     <div class="legend-item"><div class="legend-box" style="background:var(--external-bg); border-color:var(--external-border);"></div> External System</div>
   </div>
@@ -1122,28 +992,31 @@
           <tr><th>From</th><th style="text-align:center;">&rarr;</th><th>To</th><th>Description</th><th>Protocol</th></tr>
         </thead>
         <tbody>
-          <tr><td class="from">Users (all roles)</td><td class="arrow">&rarr;</td><td class="to">API Gateway</td><td class="desc">All API calls enter through the gateway, which routes to appropriate microservice</td><td class="tech">REST / HTTPS / JSON</td></tr>
+          <tr><td class="from">Users (all roles)</td><td class="arrow">&rarr;</td><td class="to">API Gateway</td><td class="desc">All API calls enter through the gateway, which validates JWT and routes to the appropriate microservice</td><td class="tech">REST / HTTPS / JSON</td></tr>
+          <tr><td class="from">API Gateway</td><td class="arrow">&rarr;</td><td class="to">All Microservices</td><td class="desc">Validates JWT centrally, extracts claims, forwards X-User-Id / X-User-Role / X-User-Email headers to downstream services</td><td class="tech">REST / HTTP + Headers</td></tr>
           <tr><td class="from">API Gateway</td><td class="arrow">&rarr;</td><td class="to">Eureka Server</td><td class="desc">Discovers service instances by name for request routing</td><td class="tech">Eureka Client</td></tr>
           <tr><td class="from">All Microservices</td><td class="arrow">&rarr;</td><td class="to">Eureka Server</td><td class="desc">Register on startup, send heartbeats, deregister on shutdown</td><td class="tech">Eureka Client</td></tr>
           <tr><td class="from">All Microservices</td><td class="arrow">&rarr;</td><td class="to">Config Server</td><td class="desc">Fetch centralized configuration on startup (DB URLs, Kafka config, feature flags)</td><td class="tech">Spring Cloud Config Client</td></tr>
-          <tr><td class="from">All Microservices</td><td class="arrow">&rarr;</td><td class="to">Zipkin</td><td class="desc">Report trace spans automatically via Micrometer Tracing (auto-configured)</td><td class="tech">Micrometer Tracing / Brave</td></tr>
-          <tr><td class="from">API Gateway</td><td class="arrow">&rarr;</td><td class="to">All Microservices</td><td class="desc">Routes domain-specific requests to the owning service; validates JWT</td><td class="tech">REST / HTTP</td></tr>
+          <tr><td class="from">All Microservices</td><td class="arrow">&rarr;</td><td class="to">Grafana Tempo</td><td class="desc">Export distributed trace spans via OpenTelemetry OTLP protocol automatically</td><td class="tech">OpenTelemetry / OTLP</td></tr>
+          <tr><td class="from">All Microservices</td><td class="arrow">&rarr;</td><td class="to">Grafana Loki</td><td class="desc">Ship structured application logs for centralized aggregation and search</td><td class="tech">Loki Appender / HTTP</td></tr>
           <tr><td class="from">Each Microservice</td><td class="arrow">&rarr;</td><td class="to">Own PostgreSQL DB</td><td class="desc">Reads/writes business data + outbox_events table in the same transaction</td><td class="tech">JDBC / Spring Data JPA</td></tr>
           <tr><td class="from">Debezium (per service)</td><td class="arrow">&rarr;</td><td class="to">Kafka</td><td class="desc">Watches outbox_events table via CDC (Change Data Capture) and publishes pending events to Kafka topics</td><td class="tech">Debezium PostgreSQL Connector</td></tr>
-          <tr><td class="from">Booking Service</td><td class="arrow">&rarr;</td><td class="to">Warehouse Service</td><td class="desc">Checks room/zone availability and pricing (via OpenFeign + Resilience4j circuit breaker)</td><td class="tech">OpenFeign / HTTP</td></tr>
-          <tr><td class="from">Booking Service</td><td class="arrow">&rarr;</td><td class="to">Redis</td><td class="desc">Sets and checks room availability locks during booking creation to prevent double-booking</td><td class="tech">Spring Data Redis / Lettuce</td></tr>
-          <tr><td class="from">Goods Service</td><td class="arrow">&rarr;</td><td class="to">Booking Service</td><td class="desc">Verifies booking is active before allowing goods upload (via OpenFeign + Resilience4j)</td><td class="tech">OpenFeign / HTTP</td></tr>
-          <tr><td class="from">Delivery Service</td><td class="arrow">&rarr;</td><td class="to">Goods Service</td><td class="desc">Checks goods availability for picking (via OpenFeign + Resilience4j)</td><td class="tech">OpenFeign / HTTP</td></tr>
-          <tr><td class="from">Kafka</td><td class="arrow">&rarr;</td><td class="to">Platform Service</td><td class="desc">Consumes all events (idempotent); sends emails, persists notifications, writes audit logs</td><td class="tech">Spring Kafka Consumer + DLT</td></tr>
-          <tr><td class="from">Kafka</td><td class="arrow">&rarr;</td><td class="to">Billing Service</td><td class="desc">Consumes booking.confirmed (idempotent) to generate invoices</td><td class="tech">Spring Kafka Consumer + DLT</td></tr>
-          <tr><td class="from">Kafka</td><td class="arrow">&rarr;</td><td class="to">Booking Service</td><td class="desc">Consumes payment.success (idempotent) to activate booking</td><td class="tech">Spring Kafka Consumer + DLT</td></tr>
-          <tr><td class="from">Kafka</td><td class="arrow">&rarr;</td><td class="to">Warehouse Service</td><td class="desc">Consumes booking.cancelled, booking.expired (idempotent) to release rooms</td><td class="tech">Spring Kafka Consumer + DLT</td></tr>
-          <tr><td class="from">Billing Service</td><td class="arrow">&rarr;</td><td class="to">Stripe</td><td class="desc">Creates Stripe Checkout sessions for invoice payments</td><td class="tech">Stripe Java SDK / HTTPS</td></tr>
-          <tr><td class="from">Stripe</td><td class="arrow">&rarr;</td><td class="to">Billing Service</td><td class="desc">Fires webhook events for payment success or failure</td><td class="tech">HTTPS Webhook / JSON</td></tr>
+          <tr><td class="from">Reservation Service</td><td class="arrow">&rarr;</td><td class="to">Inventory Service</td><td class="desc">Checks room/zone availability and pricing before creating a booking (via OpenFeign + Resilience4j circuit breaker)</td><td class="tech">OpenFeign / HTTP</td></tr>
+          <tr><td class="from">Reservation Service</td><td class="arrow">&rarr;</td><td class="to">Redis</td><td class="desc">Sets and checks room availability locks during booking creation to prevent double-booking</td><td class="tech">Spring Data Redis / Lettuce</td></tr>
+          <tr><td class="from">Inventory Service</td><td class="arrow">&rarr;</td><td class="to">Reservation Service</td><td class="desc">Verifies booking is active before allowing goods upload (via OpenFeign + Resilience4j)</td><td class="tech">OpenFeign / HTTP</td></tr>
+          <tr><td class="from">Delivery Service</td><td class="arrow">&rarr;</td><td class="to">Inventory Service</td><td class="desc">Checks goods item availability for picking (via OpenFeign + Resilience4j)</td><td class="tech">OpenFeign / HTTP</td></tr>
+          <tr><td class="from">Kafka</td><td class="arrow">&rarr;</td><td class="to">Platform Service</td><td class="desc">Consumes all domain events (idempotent); sends emails, persists notifications, writes audit logs</td><td class="tech">Spring Kafka Consumer + DLT</td></tr>
+          <tr><td class="from">Kafka</td><td class="arrow">&rarr;</td><td class="to">Inventory Service</td><td class="desc">Consumes booking.cancelled, booking.expired (idempotent) to release rooms back to available</td><td class="tech">Spring Kafka Consumer + DLT</td></tr>
+          <tr><td class="from">Reservation Service</td><td class="arrow">&rarr;</td><td class="to">Stripe</td><td class="desc">Creates Stripe Checkout sessions for invoice payments</td><td class="tech">Stripe Java SDK / HTTPS</td></tr>
+          <tr><td class="from">Stripe</td><td class="arrow">&rarr;</td><td class="to">Reservation Service</td><td class="desc">Fires webhook events for payment success or failure</td><td class="tech">HTTPS Webhook / JSON</td></tr>
           <tr><td class="from">Platform Service</td><td class="arrow">&rarr;</td><td class="to">SMTP / SendGrid</td><td class="desc">Sends transactional emails when Kafka events are consumed</td><td class="tech">JavaMailSender / SMTP</td></tr>
         </tbody>
       </table>
     </div>
+  </div>
+
+  <div class="explanation">
+    <strong>Key changes from the previous 7-service architecture:</strong> Warehouse Service + Goods Service merged into <strong>Inventory Service</strong> (port 8082, inventory_db). Booking Service + Billing Service merged into <strong>Reservation Service</strong> (port 8083, reservation_db). Invoice generation on booking.confirmed and booking activation on payment.success are now internal method calls within Reservation Service — no longer Kafka events. Zipkin replaced by <strong>OpenTelemetry + Grafana Tempo</strong> (traces) + <strong>Grafana Loki</strong> (logs) + <strong>Grafana</strong> (dashboards). JWT validation centralized at <strong>API Gateway</strong> — only Gateway + Identity Service have the jjwt dependency; downstream services read X-User-Id/X-User-Role/X-User-Email headers.
   </div>
 
 </div>
@@ -1162,22 +1035,22 @@
   <div class="info-grid">
     <div class="info-box">
       <h4>MICROSERVICE RULES</h4>
-      <p>1. Each service owns its own database — no shared DB access. 2. Synchronous cross-service calls use REST/HTTP via OpenFeign with Resilience4j circuit breakers. 3. Async events go through the Transactional Outbox pattern (write to outbox table &rarr; Debezium CDC &rarr; Kafka). All consumers are idempotent with Dead Letter Topics. 4. JWT validation at API Gateway, propagated via Feign interceptors for service-to-service calls.</p>
+      <p>1. Each service owns its own database — no shared DB access. 2. Synchronous cross-service calls use REST/HTTP via OpenFeign with Resilience4j circuit breakers. 3. Async events go through the Transactional Outbox pattern (write to outbox table &rarr; Debezium CDC &rarr; Kafka). All consumers are idempotent with Dead Letter Topics. 4. API Gateway validates JWT centrally and forwards X-User-Id, X-User-Role, X-User-Email headers — downstream services just read headers.</p>
     </div>
     <div class="info-box">
       <h4>WHY THIS STRUCTURE</h4>
-      <p>Each microservice is independently deployable, scalable, and maintainable. Teams can work on separate services without stepping on each other. Database-per-service ensures strong data ownership and bounded contexts.</p>
+      <p>Each microservice is independently deployable, scalable, and maintainable. Inventory Service combines warehouse and goods management into one bounded context (same DB enables real FKs). Reservation Service combines booking and billing (invoice generation on booking.confirmed is now a local call, not a Kafka event). Database-per-service ensures strong data ownership.</p>
     </div>
   </div>
 
-  <!-- COMPONENT GRID -->
+  <!-- MS1 — Identity Service -->
   <div class="section">
     <div class="section-title">MS1 — Identity Service (Auth + User + Security)</div>
     <div class="component-grid" style="grid-template-columns: repeat(3, 1fr);">
 
       <div class="component-item">
         <span class="ci-icon">&#x1F510;</span>
-        <span class="ci-type">Component</span>
+        <span class="ci-type">[Component: Spring Bean]</span>
         <span class="ci-name">Auth Controller</span>
         <span class="ci-desc">User registration (owner, customer), login, JWT token generation and refresh, password reset flow.</span>
         <span class="ci-endpoints">POST /auth/register/owner<br>POST /auth/register/customer<br>POST /auth/login<br>POST /auth/refresh-token<br>POST /auth/forgot-password</span>
@@ -1186,7 +1059,7 @@
 
       <div class="component-item">
         <span class="ci-icon">&#x1F465;</span>
-        <span class="ci-type">Component</span>
+        <span class="ci-type">[Component: Spring Bean]</span>
         <span class="ci-name">User Controller</span>
         <span class="ci-desc">User profile management, Super Admin approval/rejection of warehouse owners, staff and delivery agent account creation by warehouse owners.</span>
         <span class="ci-endpoints">GET /users/me<br>PATCH /users/me<br>GET /admin/owners<br>PATCH /admin/owners/{id}/approve<br>POST /owner/staff<br>POST /owner/delivery-agents</span>
@@ -1195,27 +1068,30 @@
 
       <div class="component-item" style="background:#f0f9ff; border-color:#0369a1;">
         <span class="ci-icon">&#x1F6E1;&#xFE0F;</span>
-        <span class="ci-type" style="color:#0369a1;">Component</span>
+        <span class="ci-type" style="color:#0369a1;">[Component: Spring Security]</span>
         <span class="ci-name" style="color:#0369a1;">Security Filter</span>
-        <span class="ci-desc">JWT generation, validation, and role extraction. Provides a shared JWT library that the API Gateway uses for token validation on every request.</span>
-        <span class="ci-endpoints">Used by API Gateway for<br>token validation on all requests</span>
-        <span class="ci-tech" style="background:white;">Spring Security &middot; JWT</span>
+        <span class="ci-desc">JWT generation only — token creation for login and refresh. JWT validation happens at the API Gateway, not here. Only Identity Service and API Gateway have the jjwt dependency.</span>
+        <span class="ci-endpoints">Used by Auth Controller for<br>token generation on login/refresh</span>
+        <span class="ci-tech" style="background:white;">Spring Security &middot; jjwt</span>
       </div>
 
     </div>
     <div class="explanation" style="margin-top:16px;">
-      <strong>Database:</strong> identity_db &mdash; Owns: users, warehouse_owner_profiles, customer_profiles, staff_profiles, delivery_agent_profiles<br>
+      <strong>Database:</strong> identity_db &mdash; 5 tables: users, warehouse_owner_profiles, customer_profiles, staff_profiles, delivery_agent_profiles + outbox_events<br>
       <strong>Publishes:</strong> owner.approved, owner.rejected &mdash; <strong>Consumes:</strong> none
     </div>
   </div>
 
+  <!-- MS2 — Inventory Service -->
   <div class="section">
-    <div class="section-title">MS2 — Warehouse Service (Warehouse + Zone + Room + Categories)</div>
-    <div class="component-grid" style="grid-template-columns: repeat(3, 1fr);">
+    <div class="section-title">MS2 — Inventory Service (Warehouse + Goods — two internal packages)</div>
+
+    <div class="package-label">warehouse/ package</div>
+    <div class="component-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom:20px;">
 
       <div class="component-item">
         <span class="ci-icon">&#x1F3ED;</span>
-        <span class="ci-type">Component</span>
+        <span class="ci-type">[Component: Spring Bean]</span>
         <span class="ci-name">Warehouse Controller</span>
         <span class="ci-desc">Warehouse CRUD, image uploads, dynamic Excel template generation for warehouse blueprints, Excel import parsing and validation, publish/unpublish lifecycle.</span>
         <span class="ci-endpoints">POST /owner/warehouses<br>GET /warehouses (public)<br>GET /owner/warehouses/{id}/import/template<br>POST /owner/warehouses/{id}/import<br>PATCH /owner/warehouses/{id}/publish</span>
@@ -1224,16 +1100,16 @@
 
       <div class="component-item">
         <span class="ci-icon">&#x1F5C2;&#xFE0F;</span>
-        <span class="ci-type">Component</span>
+        <span class="ci-type">[Component: Spring Bean]</span>
         <span class="ci-name">Zone &amp; Room Controller</span>
-        <span class="ci-desc">Zone and room management within warehouses. Zone availability date ranges. Room pricing per m&sup2; (daily/weekly/monthly). Availability checks exposed to Booking Service via REST.</span>
+        <span class="ci-desc">Zone and room management within warehouses. Zone availability date ranges. Room pricing per m&sup2; (daily/weekly/monthly). Availability checks exposed to Reservation Service via REST.</span>
         <span class="ci-endpoints">POST /owner/warehouses/{id}/zones<br>POST /owner/zones/{id}/availabilities<br>POST /owner/zones/{id}/rooms<br>GET /warehouses/{id}/zones (public)<br>PATCH /owner/rooms/{id}/status</span>
         <span class="ci-tech">Spring Data JPA</span>
       </div>
 
       <div class="component-item">
         <span class="ci-icon">&#x1F3F7;&#xFE0F;</span>
-        <span class="ci-type">Component</span>
+        <span class="ci-type">[Component: Spring Bean]</span>
         <span class="ci-name">Category Controller</span>
         <span class="ci-desc">Standalone category management. Categories are linked to zones and rooms via junction tables (zone_categories, room_categories).</span>
         <span class="ci-endpoints">POST /categories<br>GET /categories<br>POST /zones/{id}/categories<br>POST /rooms/{id}/categories</span>
@@ -1241,57 +1117,22 @@
       </div>
 
     </div>
-    <div class="explanation" style="margin-top:16px;">
-      <strong>Database:</strong> warehouse_db &mdash; Owns: warehouses, warehouse_images, warehouse_excel_imports, categories, zones, zone_categories, zone_availabilities, rooms, room_categories<br>
-      <strong>Publishes:</strong> none &mdash; <strong>Consumes:</strong> booking.cancelled (release room), booking.expired (release room)
-    </div>
-  </div>
 
-  <div class="section">
-    <div class="section-title">MS3 — Booking Service</div>
-    <div class="component-grid" style="grid-template-columns: repeat(2, 1fr);">
-
-      <div class="component-item">
-        <span class="ci-icon">&#x1F4C5;</span>
-        <span class="ci-type">Component</span>
-        <span class="ci-name">Booking Controller</span>
-        <span class="ci-desc">Booking request creation with availability check via Warehouse Service + Redis lock. Owner approval/rejection flow. Booking lifecycle management.</span>
-        <span class="ci-endpoints">POST /customer/bookings<br>GET /customer/bookings<br>PATCH /owner/bookings/{id}/confirm<br>PATCH /owner/bookings/{id}/reject<br>PATCH /customer/bookings/{id}/cancel</span>
-        <span class="ci-tech">Redis &middot; Kafka Producer &middot; Spring Data JPA</span>
-      </div>
-
-      <div class="component-item">
-        <span class="ci-icon">&#x23F0;</span>
-        <span class="ci-type">Component</span>
-        <span class="ci-name">Booking Expiry Tracker</span>
-        <span class="ci-desc">Tracks bookings nearing expiry. Responds to scheduler events from Platform Service to expire bookings and update statuses.</span>
-        <span class="ci-endpoints">(Internal — event-driven)</span>
-        <span class="ci-tech">Kafka Consumer &middot; Spring Data JPA</span>
-      </div>
-
-    </div>
-    <div class="explanation" style="margin-top:16px;">
-      <strong>Database:</strong> booking_db &mdash; Owns: bookings, booking_expiry_notifications<br>
-      <strong>Calls:</strong> Warehouse Service (availability check) &mdash; <strong>Publishes:</strong> booking.confirmed, booking.cancelled &mdash; <strong>Consumes:</strong> payment.success (activate booking), booking.expiry.check (from scheduler)
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">MS4 — Goods Service</div>
+    <div class="package-label">goods/ package</div>
     <div class="component-grid" style="grid-template-columns: repeat(2, 1fr);">
 
       <div class="component-item">
         <span class="ci-icon">&#x1F4E6;</span>
-        <span class="ci-type">Component</span>
+        <span class="ci-type">[Component: Spring Bean]</span>
         <span class="ci-name">Goods Import Controller</span>
-        <span class="ci-desc">Dynamic goods Excel template generation, goods list upload and validation per booking, owner approval flow for imported goods.</span>
+        <span class="ci-desc">Dynamic goods Excel template generation, goods list upload and validation per booking, owner approval flow for imported goods. goods_items has a real FK to goods_excel_imports (same database).</span>
         <span class="ci-endpoints">GET /customer/bookings/{id}/goods/template<br>POST /customer/bookings/{id}/goods/import<br>PATCH /owner/goods/imports/{id}/approve<br>PATCH /owner/goods/imports/{id}/reject</span>
         <span class="ci-tech">Apache POI &middot; OpenCSV &middot; Kafka Producer</span>
       </div>
 
       <div class="component-item">
         <span class="ci-icon">&#x1F4CB;</span>
-        <span class="ci-type">Component</span>
+        <span class="ci-type">[Component: Spring Bean]</span>
         <span class="ci-name">Goods Receipt Controller</span>
         <span class="ci-desc">Staff goods receipt confirmation with condition tracking (GOOD/DAMAGED/REJECTED) and discrepancy handling when received qty differs from expected.</span>
         <span class="ci-endpoints">POST /staff/goods/receipts<br>POST /staff/goods/receipts/{id}/items</span>
@@ -1300,18 +1141,75 @@
 
     </div>
     <div class="explanation" style="margin-top:16px;">
-      <strong>Database:</strong> goods_db &mdash; Owns: goods_excel_imports, goods_items, goods_receipts, goods_receipt_items<br>
-      <strong>Calls:</strong> Booking Service (verify active booking) &mdash; <strong>Publishes:</strong> goods.import.pending, goods.approved, goods.rejected, goods.discrepancy &mdash; <strong>Consumes:</strong> none
+      <strong>Database:</strong> inventory_db &mdash; 13 tables: warehouses, warehouse_images, warehouse_excel_imports, categories, zones, zone_categories, zone_availabilities, rooms, room_categories, goods_excel_imports, goods_items, goods_receipts, goods_receipt_items + outbox_events<br>
+      <strong>Calls:</strong> Reservation Service (verify active booking for goods import) &mdash; <strong>Publishes:</strong> goods.import.pending, goods.approved, goods.rejected, goods.discrepancy &mdash; <strong>Consumes:</strong> booking.cancelled (release room), booking.expired (release room)
     </div>
   </div>
 
+  <!-- MS3 — Reservation Service -->
   <div class="section">
-    <div class="section-title">MS5 — Delivery Service</div>
+    <div class="section-title">MS3 — Reservation Service (Booking + Billing — two internal packages)</div>
+
+    <div class="package-label">booking/ package</div>
+    <div class="component-grid" style="grid-template-columns: repeat(2, 1fr); margin-bottom:20px;">
+
+      <div class="component-item">
+        <span class="ci-icon">&#x1F4C5;</span>
+        <span class="ci-type">[Component: Spring Bean]</span>
+        <span class="ci-name">Booking Controller</span>
+        <span class="ci-desc">Booking request creation with availability check via Inventory Service + Redis lock. Owner approval/rejection flow. On booking.confirmed, internally triggers invoice generation (local method call, not Kafka). On payment.success, internally activates booking.</span>
+        <span class="ci-endpoints">POST /customer/bookings<br>GET /customer/bookings<br>PATCH /owner/bookings/{id}/confirm<br>PATCH /owner/bookings/{id}/reject<br>PATCH /customer/bookings/{id}/cancel</span>
+        <span class="ci-tech">Redis &middot; Kafka Producer &middot; Spring Data JPA</span>
+      </div>
+
+      <div class="component-item">
+        <span class="ci-icon">&#x23F0;</span>
+        <span class="ci-type">[Component: Spring Bean]</span>
+        <span class="ci-name">Booking Expiry Tracker</span>
+        <span class="ci-desc">Tracks bookings nearing expiry. Responds to scheduler events from Platform Service to expire bookings and update statuses.</span>
+        <span class="ci-endpoints">(Internal — event-driven)</span>
+        <span class="ci-tech">Kafka Consumer &middot; Spring Data JPA</span>
+      </div>
+
+    </div>
+
+    <div class="package-label">billing/ package</div>
+    <div class="component-grid" style="grid-template-columns: repeat(2, 1fr);">
+
+      <div class="component-item">
+        <span class="ci-icon">&#x1F4B3;</span>
+        <span class="ci-type">[Component: Spring Bean]</span>
+        <span class="ci-name">Invoice Controller</span>
+        <span class="ci-desc">Invoice generation (triggered internally when booking is confirmed — local method call, not Kafka). Stripe Checkout session creation. Credit note issuance by warehouse owner. invoices.booking_id is a real FK to bookings (same database).</span>
+        <span class="ci-endpoints">GET /customer/invoices<br>POST /customer/invoices/{id}/pay<br>GET /owner/invoices<br>POST /owner/invoices/{id}/credit-note</span>
+        <span class="ci-tech">Stripe Java SDK &middot; Spring Data JPA</span>
+      </div>
+
+      <div class="component-item">
+        <span class="ci-icon">&#x1F4B0;</span>
+        <span class="ci-type">[Component: Spring Bean]</span>
+        <span class="ci-name">Payment Webhook Handler</span>
+        <span class="ci-desc">Handles Stripe webhook callbacks for payment success and failure. Updates invoice status. On payment.success, internally activates booking (local method call, not Kafka). Publishes payment events for Platform Service notifications.</span>
+        <span class="ci-endpoints">POST /webhooks/stripe</span>
+        <span class="ci-tech">Stripe Webhook &middot; Kafka Producer</span>
+      </div>
+
+    </div>
+    <div class="explanation" style="margin-top:16px;">
+      <strong>Database:</strong> reservation_db &mdash; 6 tables: bookings, booking_expiry_notifications, invoices, invoice_items, payments, credit_notes + outbox_events<br>
+      <strong>Calls:</strong> Inventory Service (room availability check), Stripe (external payment) &mdash; <strong>Publishes:</strong> booking.confirmed, booking.cancelled, invoice.generated, payment.success, payment.failed &mdash; <strong>Consumes:</strong> booking.expired (from scheduler), invoice.overdue (from scheduler)<br>
+      <strong>Internal flows (no Kafka):</strong> booking.confirmed &rarr; invoice generation (local call), payment.success &rarr; booking activation (local call)
+    </div>
+  </div>
+
+  <!-- MS4 — Delivery Service -->
+  <div class="section">
+    <div class="section-title">MS4 — Delivery Service</div>
     <div class="component-grid" style="grid-template-columns: repeat(2, 1fr);">
 
       <div class="component-item">
         <span class="ci-icon">&#x1F69A;</span>
-        <span class="ci-type">Component</span>
+        <span class="ci-type">[Component: Spring Bean]</span>
         <span class="ci-name">Delivery Controller</span>
         <span class="ci-desc">Delivery request creation, staff picking flow, delivery agent notification and first-come-first-served claiming.</span>
         <span class="ci-endpoints">POST /customer/bookings/{id}/deliveries<br>PATCH /staff/deliveries/{id}/start-picking<br>POST /staff/deliveries/{id}/notify-agents<br>PATCH /agent/deliveries/{id}/claim</span>
@@ -1320,7 +1218,7 @@
 
       <div class="component-item">
         <span class="ci-icon">&#x1F4CD;</span>
-        <span class="ci-type">Component</span>
+        <span class="ci-type">[Component: Spring Bean]</span>
         <span class="ci-name">Shipment Controller</span>
         <span class="ci-desc">Shipment checkpoint state machine (PENDING &rarr; PICKED_UP &rarr; IN_TRANSIT &rarr; DELIVERED). Delivery agents update checkpoints with location and status.</span>
         <span class="ci-endpoints">POST /agent/shipments/{id}/checkpoints<br>GET /customer/shipments/{id}/track</span>
@@ -1329,47 +1227,19 @@
 
     </div>
     <div class="explanation" style="margin-top:16px;">
-      <strong>Database:</strong> delivery_db &mdash; Owns: delivery_requests, delivery_request_items, delivery_notifications, shipments, shipment_checkpoints<br>
-      <strong>Calls:</strong> Goods Service (check item availability for picking), Booking Service (verify booking) &mdash; <strong>Publishes:</strong> delivery.ready, delivery.claimed, delivery.checkpoint &mdash; <strong>Consumes:</strong> none
+      <strong>Database:</strong> delivery_db &mdash; 5 tables: delivery_requests, delivery_request_items, delivery_notifications, shipments, shipment_checkpoints + outbox_events<br>
+      <strong>Calls:</strong> Inventory Service (check goods item availability for picking) &mdash; <strong>Publishes:</strong> delivery.ready, delivery.claimed, delivery.checkpoint &mdash; <strong>Consumes:</strong> none
     </div>
   </div>
 
+  <!-- MS5 — Platform Service -->
   <div class="section">
-    <div class="section-title">MS6 — Billing Service</div>
-    <div class="component-grid" style="grid-template-columns: repeat(2, 1fr);">
-
-      <div class="component-item">
-        <span class="ci-icon">&#x1F4B3;</span>
-        <span class="ci-type">Component</span>
-        <span class="ci-name">Invoice Controller</span>
-        <span class="ci-desc">Invoice generation (triggered by booking.confirmed event), Stripe Checkout session creation, credit note issuance by warehouse owner.</span>
-        <span class="ci-endpoints">GET /customer/invoices<br>POST /customer/invoices/{id}/pay<br>GET /owner/invoices<br>POST /owner/invoices/{id}/credit-note</span>
-        <span class="ci-tech">Stripe Java SDK &middot; Kafka Consumer/Producer</span>
-      </div>
-
-      <div class="component-item">
-        <span class="ci-icon">&#x1F4B0;</span>
-        <span class="ci-type">Component</span>
-        <span class="ci-name">Payment Webhook Handler</span>
-        <span class="ci-desc">Handles Stripe webhook callbacks for payment success and failure. Updates invoice status and publishes payment events.</span>
-        <span class="ci-endpoints">POST /webhooks/stripe</span>
-        <span class="ci-tech">Stripe Webhook &middot; Kafka Producer</span>
-      </div>
-
-    </div>
-    <div class="explanation" style="margin-top:16px;">
-      <strong>Database:</strong> billing_db &mdash; Owns: invoices, invoice_items, payments, credit_notes<br>
-      <strong>Calls:</strong> Stripe (external) &mdash; <strong>Publishes:</strong> invoice.generated, payment.success, payment.failed &mdash; <strong>Consumes:</strong> booking.confirmed (generate invoice), invoice.overdue (from scheduler)
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">MS7 — Platform Service (Notification + Audit + Scheduler)</div>
+    <div class="section-title">MS5 — Platform Service (Notification + Audit + Scheduler)</div>
     <div class="component-grid" style="grid-template-columns: repeat(3, 1fr);">
 
       <div class="component-item">
         <span class="ci-icon">&#x1F514;</span>
-        <span class="ci-type">Component</span>
+        <span class="ci-type">[Component: Spring Bean]</span>
         <span class="ci-name">Notification Handler</span>
         <span class="ci-desc">Kafka consumer for all system events. Persists in-app notifications to database. Sends transactional emails via JavaMailSender for every event type.</span>
         <span class="ci-endpoints">GET /notifications<br>PATCH /notifications/{id}/read<br>PATCH /notifications/read-all<br>GET /notifications/unread-count</span>
@@ -1378,7 +1248,7 @@
 
       <div class="component-item" style="background:#f0fdf4; border-color:#15803d;">
         <span class="ci-icon">&#x1F4CB;</span>
-        <span class="ci-type" style="color:#15803d;">Component</span>
+        <span class="ci-type" style="color:#15803d;">[Component: Spring Bean]</span>
         <span class="ci-name" style="color:#15803d;">Audit Logger</span>
         <span class="ci-desc">Kafka consumer that listens to all domain events and persists immutable audit log records with old and new values as JSONB.</span>
         <span class="ci-endpoints">(Internal &mdash; Kafka consumer only)</span>
@@ -1387,7 +1257,7 @@
 
       <div class="component-item" style="background:var(--batch-bg); border-color:var(--batch-border);">
         <span class="ci-icon">&#x2699;&#xFE0F;</span>
-        <span class="ci-type" style="color:var(--batch-text);">Component</span>
+        <span class="ci-type" style="color:var(--batch-text);">[Component: Spring Batch]</span>
         <span class="ci-name" style="color:var(--batch-text);">Scheduler</span>
         <span class="ci-desc">Spring Batch jobs running on schedule. Booking expiry detection and overdue invoice marking. Fires Kafka events after processing.</span>
         <span class="ci-endpoints">Nightly: booking-expiry-job<br>Daily 8AM: overdue-invoice-job</span>
@@ -1396,7 +1266,7 @@
 
     </div>
     <div class="explanation" style="margin-top:16px;">
-      <strong>Database:</strong> platform_db &mdash; Owns: notifications, audit_logs<br>
+      <strong>Database:</strong> platform_db &mdash; 2 tables: notifications, audit_logs + outbox_events<br>
       <strong>Publishes:</strong> booking.expiry.soon, booking.expired, invoice.overdue &mdash; <strong>Consumes:</strong> ALL domain events (for notifications and audit logging)
     </div>
   </div>
@@ -1405,16 +1275,17 @@
   <div class="section">
     <div class="section-title">Kafka Event Map — How Services Communicate</div>
     <div class="explanation">
-      Services never call each other for notifications. When something significant happens in one service, it publishes a Kafka event. Other services that care about that event consume it independently. This means services are fully decoupled — the Booking Service doesn't know or care that a Platform Service exists.
+      Services never call each other for notifications. When something significant happens in one service, it publishes a Kafka event. Other services that care about that event consume it independently. This means services are fully decoupled — the Reservation Service doesn't know or care that a Platform Service exists.<br><br>
+      <strong>Eliminated events (now internal to Reservation Service):</strong> booking.confirmed &rarr; Billing (invoice generation) is now a local method call within Reservation Service. payment.success &rarr; Booking (activate booking) is now a local method call within Reservation Service. These events are still published to Kafka for Platform Service notifications, but they no longer trigger cross-service actions.
     </div>
     <div class="kafka-grid">
       <div class="kafka-event">
         <span class="ke-topic">booking.confirmed</span>
-        <span class="ke-flow">Booking &rarr; Billing (generate invoice), Platform (notify customer + owner)</span>
+        <span class="ke-flow">Reservation &rarr; Platform (notify customer + owner). Invoice generation is now internal to Reservation Service (local call).</span>
       </div>
       <div class="kafka-event">
         <span class="ke-topic">booking.cancelled</span>
-        <span class="ke-flow">Booking &rarr; Warehouse (release room), Platform (notify customer + owner)</span>
+        <span class="ke-flow">Reservation &rarr; Inventory (release room), Platform (notify customer + owner)</span>
       </div>
       <div class="kafka-event">
         <span class="ke-topic">booking.expiry.soon</span>
@@ -1422,23 +1293,23 @@
       </div>
       <div class="kafka-event">
         <span class="ke-topic">booking.expired</span>
-        <span class="ke-flow">Platform (Scheduler) &rarr; Warehouse (release room), Booking (update status), Platform (notify)</span>
+        <span class="ke-flow">Platform (Scheduler) &rarr; Inventory (release room), Reservation (update status), Platform (notify)</span>
       </div>
       <div class="kafka-event">
         <span class="ke-topic">goods.import.pending</span>
-        <span class="ke-flow">Goods &rarr; Platform (notify owner to approve)</span>
+        <span class="ke-flow">Inventory &rarr; Platform (notify owner to approve)</span>
       </div>
       <div class="kafka-event">
         <span class="ke-topic">goods.approved</span>
-        <span class="ke-flow">Goods &rarr; Platform (email customer — bring goods within 24h)</span>
+        <span class="ke-flow">Inventory &rarr; Platform (email customer — bring goods within 24h)</span>
       </div>
       <div class="kafka-event">
         <span class="ke-topic">goods.rejected</span>
-        <span class="ke-flow">Goods &rarr; Platform (email customer with rejection reason)</span>
+        <span class="ke-flow">Inventory &rarr; Platform (email customer with rejection reason)</span>
       </div>
       <div class="kafka-event">
         <span class="ke-topic">goods.discrepancy</span>
-        <span class="ke-flow">Goods &rarr; Platform (email customer about quantity mismatch)</span>
+        <span class="ke-flow">Inventory &rarr; Platform (email customer about quantity mismatch)</span>
       </div>
       <div class="kafka-event">
         <span class="ke-topic">delivery.ready</span>
@@ -1454,19 +1325,19 @@
       </div>
       <div class="kafka-event">
         <span class="ke-topic">invoice.generated</span>
-        <span class="ke-flow">Billing &rarr; Platform (email customer with invoice and payment link)</span>
+        <span class="ke-flow">Reservation &rarr; Platform (email customer with invoice and payment link)</span>
       </div>
       <div class="kafka-event">
         <span class="ke-topic">payment.success</span>
-        <span class="ke-flow">Billing &rarr; Booking (activate booking), Platform (email receipt)</span>
+        <span class="ke-flow">Reservation &rarr; Platform (email receipt). Booking activation is now internal to Reservation Service (local call).</span>
       </div>
       <div class="kafka-event">
         <span class="ke-topic">payment.failed</span>
-        <span class="ke-flow">Billing &rarr; Platform (email customer with failure reason)</span>
+        <span class="ke-flow">Reservation &rarr; Platform (email customer with failure reason)</span>
       </div>
       <div class="kafka-event">
         <span class="ke-topic">invoice.overdue</span>
-        <span class="ke-flow">Platform (Scheduler) &rarr; Billing (mark overdue), Platform (notify customer + owner)</span>
+        <span class="ke-flow">Platform (Scheduler) &rarr; Reservation (mark overdue), Platform (notify customer + owner)</span>
       </div>
       <div class="kafka-event">
         <span class="ke-topic">owner.approved</span>
@@ -1474,6 +1345,8 @@
       </div>
     </div>
   </div>
+
+  <div class="diagram-title">Component diagram for WarehouseManagementSystem Microservices<span class="dt-sub">Shows the internal components of each microservice and how they interact</span></div>
 
 </div>
 
@@ -1491,11 +1364,11 @@
   <div class="info-grid">
     <div class="info-box">
       <h4>WHAT THIS LEVEL SHOWS</h4>
-      <p>Key entities per service database with their primary fields. Every entity maps to a database table. Foreign keys (FK) show relationships within a service's database. Cross-service references use UUIDs without FK constraints (since they're in different databases).</p>
+      <p>Key entities per service database with their primary fields. Every entity maps to a database table. Foreign keys (FK) show relationships within a service's database. Cross-service references use UUIDs without FK constraints (since they're in different databases). Merged services (Inventory, Reservation) now have real FKs where data was previously cross-service.</p>
     </div>
     <div class="info-box">
       <h4>DESIGN DECISIONS</h4>
-      <p>All PKs are UUID (not auto-increment) for security and distributed readiness. All enums stored as strings for readability. All timestamps use TIMESTAMPTZ for timezone safety. Soft-delete columns (deleted_at) are nullable. Database-per-service means no cross-database FK constraints.</p>
+      <p>All PKs are UUID (not auto-increment) for security and distributed readiness. All enums stored as strings for readability. All timestamps use TIMESTAMPTZ for timezone safety. Soft-delete columns (deleted_at) are nullable. Database-per-service means no cross-database FK constraints. Inventory Service merges warehouse + goods tables (goods_items FK to goods_excel_imports). Reservation Service merges booking + billing tables (invoices.booking_id FK to bookings).</p>
     </div>
   </div>
 
@@ -1561,10 +1434,14 @@
         </div>
       </div>
 
-      <!-- WAREHOUSE SERVICE -->
+      <!-- INVENTORY SERVICE -->
       <div class="entity-module">
-        <div class="em-header" style="background:var(--system-bg); color:var(--system-text);">&#x1F3ED; Warehouse Service — warehouse_db</div>
+        <div class="em-header" style="background:var(--system-bg); color:var(--system-text);">&#x1F4E6; Inventory Service — inventory_db</div>
         <div class="em-body">
+
+          <!-- warehouse/ package entities -->
+          <div style="font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:1px; margin-bottom:8px; padding:4px 8px; background:var(--bg); border-radius:4px; display:inline-block;">warehouse/ package</div>
+
           <div class="em-entity">
             <span class="em-entity-name" style="color:var(--system-text);">warehouses</span>
             <div class="em-fields">
@@ -1638,13 +1515,60 @@
               <div class="em-field"><span class="em-field-name">deleted_at</span><span class="em-field-type">TIMESTAMPTZ (nullable)</span></div>
             </div>
           </div>
+
+          <!-- goods/ package entities -->
+          <div style="font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:1px; margin:12px 0 8px; padding:4px 8px; background:var(--bg); border-radius:4px; display:inline-block;">goods/ package</div>
+
+          <div class="em-entity">
+            <span class="em-entity-name" style="color:var(--system-text);">goods_excel_imports</span>
+            <div class="em-fields">
+              <div class="em-field"><span class="em-field-name pk">id</span><span class="em-field-type">UUID PK</span></div>
+              <div class="em-field"><span class="em-field-name">booking_id</span><span class="em-field-type">UUID (cross-service ref)</span></div>
+              <div class="em-field"><span class="em-field-name">customer_id</span><span class="em-field-type">UUID (cross-service ref)</span></div>
+              <div class="em-field"><span class="em-field-name">file_name, status</span><span class="em-field-type">VARCHAR/ENUM</span></div>
+              <div class="em-field"><span class="em-field-name">total/success/failed_rows</span><span class="em-field-type">INT</span></div>
+              <div class="em-field"><span class="em-field-name">arrival_deadline</span><span class="em-field-type">TIMESTAMPTZ</span></div>
+              <div class="em-field"><span class="em-field-name">approved_by, approved_at</span><span class="em-field-type">UUID/TIMESTAMPTZ</span></div>
+            </div>
+          </div>
+          <div class="em-entity">
+            <span class="em-entity-name" style="color:var(--system-text);">goods_items</span>
+            <div class="em-fields">
+              <div class="em-field"><span class="em-field-name fk">goods_import_id</span><span class="em-field-type">UUID FK &rarr; goods_excel_imports</span></div>
+              <div class="em-field"><span class="em-field-name">name, sku, barcode</span><span class="em-field-type">VARCHAR</span></div>
+              <div class="em-field"><span class="em-field-name">quantity</span><span class="em-field-type">DECIMAL</span></div>
+              <div class="em-field"><span class="em-field-name">status</span><span class="em-field-type">PENDING/IN_WAREHOUSE/...</span></div>
+              <div class="em-field"><span class="em-field-name">deleted_at</span><span class="em-field-type">TIMESTAMPTZ (nullable)</span></div>
+            </div>
+          </div>
+          <div class="em-entity">
+            <span class="em-entity-name" style="color:var(--system-text);">goods_receipts</span>
+            <div class="em-fields">
+              <div class="em-field"><span class="em-field-name">booking_id</span><span class="em-field-type">UUID (cross-service ref)</span></div>
+              <div class="em-field"><span class="em-field-name">received_by</span><span class="em-field-type">UUID (cross-service ref)</span></div>
+              <div class="em-field"><span class="em-field-name">inbound_carrier</span><span class="em-field-type">VARCHAR</span></div>
+            </div>
+          </div>
+          <div class="em-entity">
+            <span class="em-entity-name" style="color:var(--system-text);">goods_receipt_items</span>
+            <div class="em-fields">
+              <div class="em-field"><span class="em-field-name fk">goods_receipt_id</span><span class="em-field-type">UUID FK &rarr; goods_receipts</span></div>
+              <div class="em-field"><span class="em-field-name fk">goods_item_id</span><span class="em-field-type">UUID FK &rarr; goods_items</span></div>
+              <div class="em-field"><span class="em-field-name">expected_qty, received_qty</span><span class="em-field-type">DECIMAL</span></div>
+              <div class="em-field"><span class="em-field-name">condition</span><span class="em-field-type">GOOD/DAMAGED/REJECTED</span></div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- BOOKING SERVICE -->
+      <!-- RESERVATION SERVICE -->
       <div class="entity-module">
-        <div class="em-header" style="background:#fef3e8; color:#c26a1a;">&#x1F4C5; Booking Service — booking_db</div>
+        <div class="em-header" style="background:#fef3e8; color:#c26a1a;">&#x1F4C5; Reservation Service — reservation_db</div>
         <div class="em-body">
+
+          <!-- booking/ package entities -->
+          <div style="font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:1px; margin-bottom:8px; padding:4px 8px; background:var(--bg); border-radius:4px; display:inline-block;">booking/ package</div>
+
           <div class="em-entity">
             <span class="em-entity-name" style="color:#c26a1a;">bookings</span>
             <div class="em-fields">
@@ -1664,55 +1588,54 @@
           <div class="em-entity">
             <span class="em-entity-name" style="color:#c26a1a;">booking_expiry_notifications</span>
             <div class="em-fields">
-              <div class="em-field"><span class="em-field-name fk">booking_id</span><span class="em-field-type">UUID FK UNIQUE</span></div>
+              <div class="em-field"><span class="em-field-name fk">booking_id</span><span class="em-field-type">UUID FK &rarr; bookings</span></div>
               <div class="em-field"><span class="em-field-name">notified_at</span><span class="em-field-type">TIMESTAMPTZ</span></div>
               <div class="em-field"><span class="em-field-name">status</span><span class="em-field-type">SENT/ACKNOWLEDGED</span></div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- GOODS SERVICE -->
-      <div class="entity-module">
-        <div class="em-header" style="background:#fef9e8; color:#8a7a1a;">&#x1F4E6; Goods Service — goods_db</div>
-        <div class="em-body">
+          <!-- billing/ package entities -->
+          <div style="font-family:var(--mono); font-size:9px; color:var(--muted); letter-spacing:1px; margin:12px 0 8px; padding:4px 8px; background:var(--bg); border-radius:4px; display:inline-block;">billing/ package</div>
+
           <div class="em-entity">
-            <span class="em-entity-name" style="color:#8a7a1a;">goods_excel_imports</span>
+            <span class="em-entity-name" style="color:#c26a1a;">invoices</span>
             <div class="em-fields">
               <div class="em-field"><span class="em-field-name pk">id</span><span class="em-field-type">UUID PK</span></div>
-              <div class="em-field"><span class="em-field-name">booking_id</span><span class="em-field-type">UUID (cross-service ref)</span></div>
               <div class="em-field"><span class="em-field-name">customer_id</span><span class="em-field-type">UUID (cross-service ref)</span></div>
-              <div class="em-field"><span class="em-field-name">file_name, status</span><span class="em-field-type">VARCHAR/ENUM</span></div>
-              <div class="em-field"><span class="em-field-name">total/success/failed_rows</span><span class="em-field-type">INT</span></div>
-              <div class="em-field"><span class="em-field-name">arrival_deadline</span><span class="em-field-type">TIMESTAMPTZ</span></div>
-              <div class="em-field"><span class="em-field-name">approved_by, approved_at</span><span class="em-field-type">UUID/TIMESTAMPTZ</span></div>
+              <div class="em-field"><span class="em-field-name">warehouse_id</span><span class="em-field-type">UUID (cross-service ref)</span></div>
+              <div class="em-field"><span class="em-field-name fk">booking_id</span><span class="em-field-type">UUID FK &rarr; bookings</span></div>
+              <div class="em-field"><span class="em-field-name">delivery_request_id</span><span class="em-field-type">UUID (nullable, cross-service ref)</span></div>
+              <div class="em-field"><span class="em-field-name">invoice_type</span><span class="em-field-type">BOOKING/DELIVERY</span></div>
+              <div class="em-field"><span class="em-field-name">amount, currency</span><span class="em-field-type">DECIMAL/VARCHAR</span></div>
+              <div class="em-field"><span class="em-field-name">status</span><span class="em-field-type">DRAFT/SENT/PAID/...</span></div>
+              <div class="em-field"><span class="em-field-name">due_date</span><span class="em-field-type">DATE</span></div>
             </div>
           </div>
           <div class="em-entity">
-            <span class="em-entity-name" style="color:#8a7a1a;">goods_items</span>
+            <span class="em-entity-name" style="color:#c26a1a;">invoice_items</span>
             <div class="em-fields">
-              <div class="em-field"><span class="em-field-name fk">goods_import_id</span><span class="em-field-type">UUID FK</span></div>
-              <div class="em-field"><span class="em-field-name">name, sku, barcode</span><span class="em-field-type">VARCHAR</span></div>
-              <div class="em-field"><span class="em-field-name">quantity</span><span class="em-field-type">DECIMAL</span></div>
-              <div class="em-field"><span class="em-field-name">status</span><span class="em-field-type">PENDING/IN_WAREHOUSE/...</span></div>
-              <div class="em-field"><span class="em-field-name">deleted_at</span><span class="em-field-type">TIMESTAMPTZ (nullable)</span></div>
+              <div class="em-field"><span class="em-field-name fk">invoice_id</span><span class="em-field-type">UUID FK &rarr; invoices</span></div>
+              <div class="em-field"><span class="em-field-name">description</span><span class="em-field-type">VARCHAR</span></div>
+              <div class="em-field"><span class="em-field-name">quantity, unit_price, total</span><span class="em-field-type">DECIMAL</span></div>
             </div>
           </div>
           <div class="em-entity">
-            <span class="em-entity-name" style="color:#8a7a1a;">goods_receipts</span>
+            <span class="em-entity-name" style="color:#c26a1a;">payments</span>
             <div class="em-fields">
-              <div class="em-field"><span class="em-field-name">booking_id</span><span class="em-field-type">UUID (cross-service ref)</span></div>
-              <div class="em-field"><span class="em-field-name">received_by</span><span class="em-field-type">UUID (cross-service ref)</span></div>
-              <div class="em-field"><span class="em-field-name">inbound_carrier</span><span class="em-field-type">VARCHAR</span></div>
+              <div class="em-field"><span class="em-field-name fk">invoice_id</span><span class="em-field-type">UUID FK &rarr; invoices</span></div>
+              <div class="em-field"><span class="em-field-name">stripe_payment_id</span><span class="em-field-type">VARCHAR UNIQUE</span></div>
+              <div class="em-field"><span class="em-field-name">stripe_receipt_url</span><span class="em-field-type">VARCHAR</span></div>
+              <div class="em-field"><span class="em-field-name">amount, status</span><span class="em-field-type">DECIMAL/ENUM</span></div>
+              <div class="em-field"><span class="em-field-name">failure_reason</span><span class="em-field-type">VARCHAR</span></div>
+              <div class="em-field"><span class="em-field-name">paid_at</span><span class="em-field-type">TIMESTAMPTZ (nullable)</span></div>
             </div>
           </div>
           <div class="em-entity">
-            <span class="em-entity-name" style="color:#8a7a1a;">goods_receipt_items</span>
+            <span class="em-entity-name" style="color:#c26a1a;">credit_notes</span>
             <div class="em-fields">
-              <div class="em-field"><span class="em-field-name fk">goods_receipt_id</span><span class="em-field-type">UUID FK</span></div>
-              <div class="em-field"><span class="em-field-name fk">goods_item_id</span><span class="em-field-type">UUID FK</span></div>
-              <div class="em-field"><span class="em-field-name">expected_qty, received_qty</span><span class="em-field-type">DECIMAL</span></div>
-              <div class="em-field"><span class="em-field-name">condition</span><span class="em-field-type">GOOD/DAMAGED/REJECTED</span></div>
+              <div class="em-field"><span class="em-field-name fk">invoice_id</span><span class="em-field-type">UUID FK &rarr; invoices</span></div>
+              <div class="em-field"><span class="em-field-name">reason</span><span class="em-field-type">TEXT</span></div>
+              <div class="em-field"><span class="em-field-name">amount</span><span class="em-field-type">DECIMAL</span></div>
             </div>
           </div>
         </div>
@@ -1773,54 +1696,6 @@
         </div>
       </div>
 
-      <!-- BILLING SERVICE -->
-      <div class="entity-module">
-        <div class="em-header" style="background:var(--system-bg); color:var(--system-text);">&#x1F4B3; Billing Service — billing_db</div>
-        <div class="em-body">
-          <div class="em-entity">
-            <span class="em-entity-name" style="color:var(--system-text);">invoices</span>
-            <div class="em-fields">
-              <div class="em-field"><span class="em-field-name pk">id</span><span class="em-field-type">UUID PK</span></div>
-              <div class="em-field"><span class="em-field-name">customer_id</span><span class="em-field-type">UUID (cross-service ref)</span></div>
-              <div class="em-field"><span class="em-field-name">warehouse_id</span><span class="em-field-type">UUID (cross-service ref)</span></div>
-              <div class="em-field"><span class="em-field-name">booking_id</span><span class="em-field-type">UUID (nullable)</span></div>
-              <div class="em-field"><span class="em-field-name">delivery_request_id</span><span class="em-field-type">UUID (nullable)</span></div>
-              <div class="em-field"><span class="em-field-name">invoice_type</span><span class="em-field-type">BOOKING/DELIVERY</span></div>
-              <div class="em-field"><span class="em-field-name">amount, currency</span><span class="em-field-type">DECIMAL/VARCHAR</span></div>
-              <div class="em-field"><span class="em-field-name">status</span><span class="em-field-type">DRAFT/SENT/PAID/...</span></div>
-              <div class="em-field"><span class="em-field-name">due_date</span><span class="em-field-type">DATE</span></div>
-            </div>
-          </div>
-          <div class="em-entity">
-            <span class="em-entity-name" style="color:var(--system-text);">invoice_items</span>
-            <div class="em-fields">
-              <div class="em-field"><span class="em-field-name fk">invoice_id</span><span class="em-field-type">UUID FK</span></div>
-              <div class="em-field"><span class="em-field-name">description</span><span class="em-field-type">VARCHAR</span></div>
-              <div class="em-field"><span class="em-field-name">quantity, unit_price, total</span><span class="em-field-type">DECIMAL</span></div>
-            </div>
-          </div>
-          <div class="em-entity">
-            <span class="em-entity-name" style="color:var(--system-text);">payments</span>
-            <div class="em-fields">
-              <div class="em-field"><span class="em-field-name fk">invoice_id</span><span class="em-field-type">UUID FK</span></div>
-              <div class="em-field"><span class="em-field-name">stripe_payment_id</span><span class="em-field-type">VARCHAR UNIQUE</span></div>
-              <div class="em-field"><span class="em-field-name">stripe_receipt_url</span><span class="em-field-type">VARCHAR</span></div>
-              <div class="em-field"><span class="em-field-name">amount, status</span><span class="em-field-type">DECIMAL/ENUM</span></div>
-              <div class="em-field"><span class="em-field-name">failure_reason</span><span class="em-field-type">VARCHAR</span></div>
-              <div class="em-field"><span class="em-field-name">paid_at</span><span class="em-field-type">TIMESTAMPTZ (nullable)</span></div>
-            </div>
-          </div>
-          <div class="em-entity">
-            <span class="em-entity-name" style="color:var(--system-text);">credit_notes</span>
-            <div class="em-fields">
-              <div class="em-field"><span class="em-field-name fk">invoice_id</span><span class="em-field-type">UUID FK</span></div>
-              <div class="em-field"><span class="em-field-name">reason</span><span class="em-field-type">TEXT</span></div>
-              <div class="em-field"><span class="em-field-name">amount</span><span class="em-field-type">DECIMAL</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- PLATFORM SERVICE -->
       <div class="entity-module">
         <div class="em-header" style="background:var(--db-bg); color:var(--db-text);">&#x1F514; Platform Service — platform_db</div>
@@ -1873,17 +1748,17 @@
         </thead>
         <tbody>
           <tr><td class="from">Identity Service</td><td class="tech">identity_db</td><td>5 + outbox</td><td class="desc">users, warehouse_owner_profiles, customer_profiles, staff_profiles, delivery_agent_profiles, outbox_events</td></tr>
-          <tr><td class="from">Warehouse Service</td><td class="tech">warehouse_db</td><td>9 + outbox</td><td class="desc">warehouses, warehouse_images, warehouse_excel_imports, categories, zones, zone_categories, zone_availabilities, rooms, room_categories, outbox_events</td></tr>
-          <tr><td class="from">Booking Service</td><td class="tech">booking_db</td><td>2 + outbox</td><td class="desc">bookings, booking_expiry_notifications, outbox_events</td></tr>
-          <tr><td class="from">Goods Service</td><td class="tech">goods_db</td><td>4 + outbox</td><td class="desc">goods_excel_imports, goods_items, goods_receipts, goods_receipt_items, outbox_events</td></tr>
+          <tr><td class="from">Inventory Service</td><td class="tech">inventory_db</td><td>13 + outbox</td><td class="desc">warehouses, warehouse_images, warehouse_excel_imports, categories, zones, zone_categories, zone_availabilities, rooms, room_categories, goods_excel_imports, goods_items, goods_receipts, goods_receipt_items, outbox_events</td></tr>
+          <tr><td class="from">Reservation Service</td><td class="tech">reservation_db</td><td>6 + outbox</td><td class="desc">bookings, booking_expiry_notifications, invoices, invoice_items, payments, credit_notes, outbox_events</td></tr>
           <tr><td class="from">Delivery Service</td><td class="tech">delivery_db</td><td>5 + outbox</td><td class="desc">delivery_requests, delivery_request_items, delivery_notifications, shipments, shipment_checkpoints, outbox_events</td></tr>
-          <tr><td class="from">Billing Service</td><td class="tech">billing_db</td><td>4 + outbox</td><td class="desc">invoices, invoice_items, payments, credit_notes, outbox_events</td></tr>
           <tr><td class="from">Platform Service</td><td class="tech">platform_db</td><td>2 + outbox</td><td class="desc">notifications, audit_logs, outbox_events</td></tr>
-          <tr style="background:#f9fafb;"><td class="from" style="font-weight:800;">Total</td><td></td><td style="font-weight:800;">31 + 7 outbox = 38 tables</td><td class="desc" style="font-weight:600;">7 services &middot; 7 databases &middot; Transactional Outbox pattern &middot; Complete domain coverage</td></tr>
+          <tr style="background:#f9fafb;"><td class="from" style="font-weight:800;">Total</td><td></td><td style="font-weight:800;">31 + 5 outbox = 36 tables</td><td class="desc" style="font-weight:600;">5 services &middot; 5 databases &middot; Transactional Outbox pattern &middot; Complete domain coverage</td></tr>
         </tbody>
       </table>
     </div>
   </div>
+
+  <div class="diagram-title">Code diagram — Entity Model per Service Database<span class="dt-sub">Shows the key entities within each microservice's database with their fields and relationships</span></div>
 
 </div>
 

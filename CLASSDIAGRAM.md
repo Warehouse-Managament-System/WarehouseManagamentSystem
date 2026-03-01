@@ -1,514 +1,477 @@
-# 🏭 WarehouseManagamentSystem — System Class Diagram
+# Class Diagram — Entity Model
 
-> Full class diagram for the WarehouseHub platform covering all roles, entities, relationships, and enumerations.
+> Mermaid `classDiagram` showing all JPA entities grouped by the 5 microservices.
+> Each entity maps 1-to-1 to a database table defined in [`docs/database-schema.sql`](docs/database-schema.sql).
+> Cross-service references use UUID fields with no FK constraint (annotated with `cross-ref`).
 
 ---
 
-## 📐 Class Diagram
+## Full Diagram
 
 ```mermaid
 classDiagram
+    direction TB
 
-    %% ─────────────────────────────────────────
-    %% AUTH
-    %% ─────────────────────────────────────────
+    %% ============================================================
+    %% IDENTITY SERVICE — identity_db (5 entities)
+    %% ============================================================
+    namespace IdentityService {
+        class User {
+            UUID id PK
+            String email UNIQUE
+            String password
+            String firstName
+            String lastName
+            String phone
+            UserRole role
+            UserStatus status
+            Instant createdAt
+            Instant updatedAt
+        }
 
-    class User {
-        -UUID id
-        -string firstName
-        -string lastName
-        -string email
-        -string passwordHash
-        -string phone
-        -UserRole role
-        -boolean isVerified
-        -DateTime createdAt
-        -DateTime updatedAt
-        +register() User
-        +login() AuthToken
-        +updateProfile() User
-        +changePassword() void
+        class WarehouseOwnerProfile {
+            UUID id PK
+            UUID userId FK → User UNIQUE
+            String companyName
+            String taxId UNIQUE
+            String address
+            String city
+            String country
+            UUID approvedBy FK → User
+            Instant approvedAt
+            String rejectionReason
+            Instant createdAt
+            Instant updatedAt
+            Instant deletedAt
+        }
+
+        class CustomerProfile {
+            UUID id PK
+            UUID userId FK → User UNIQUE
+            String companyName
+            String taxId UNIQUE
+            String address
+            String city
+            String country
+            String contactPersonName
+            Instant createdAt
+            Instant updatedAt
+        }
+
+        class StaffProfile {
+            UUID id PK
+            UUID userId FK → User UNIQUE
+            UUID warehouseId cross-ref
+            String position
+            Instant createdAt
+            Instant updatedAt
+        }
+
+        class DeliveryAgentProfile {
+            UUID id PK
+            UUID userId FK → User UNIQUE
+            UUID warehouseId cross-ref
+            String vehicleInfo
+            Instant createdAt
+            Instant updatedAt
+        }
     }
 
-    class AuthToken {
-        -UUID userId
-        -string accessToken
-        -string refreshToken
-        -DateTime expiresAt
-        +validate() boolean
-        +refresh() AuthToken
-        +revoke() void
+    User "1" --> "0..1" WarehouseOwnerProfile : has
+    User "1" --> "0..1" CustomerProfile : has
+    User "1" --> "0..1" StaffProfile : has
+    User "1" --> "0..1" DeliveryAgentProfile : has
+    User "1" --> "0..*" WarehouseOwnerProfile : approvedBy
+
+    %% ============================================================
+    %% INVENTORY SERVICE — inventory_db (13 entities)
+    %% Warehouse + Goods merged — same DB, real FKs
+    %% ============================================================
+    namespace InventoryService {
+        class Warehouse {
+            UUID id PK
+            UUID ownerId cross-ref
+            String name
+            String description
+            String address
+            String city
+            String country
+            BigDecimal latitude
+            BigDecimal longitude
+            BigDecimal totalSurfaceArea
+            WarehouseStatus status
+            Instant createdAt
+            Instant updatedAt
+        }
+
+        class WarehouseImage {
+            UUID id PK
+            UUID warehouseId FK → Warehouse
+            String url
+            Boolean isPrimary
+            Instant createdAt
+        }
+
+        class WarehouseExcelImport {
+            UUID id PK
+            UUID warehouseId FK → Warehouse
+            UUID ownerId cross-ref
+            String fileName
+            ImportStatus status
+            int totalRows
+            int successRows
+            int failedRows
+            String errorFileUrl
+            Instant createdAt
+        }
+
+        class Category {
+            UUID id PK
+            String name UNIQUE
+            String description
+            Instant createdAt
+        }
+
+        class Zone {
+            UUID id PK
+            UUID warehouseId FK → Warehouse
+            String name
+            String description
+            TemperatureType temperatureType
+            BigDecimal totalSurfaceArea
+            ZoneStatus status
+            Instant createdAt
+            Instant updatedAt
+        }
+
+        class ZoneCategory {
+            UUID id PK
+            UUID zoneId FK → Zone
+            UUID categoryId FK → Category
+            Instant createdAt
+        }
+
+        class ZoneAvailability {
+            UUID id PK
+            UUID zoneId FK → Zone
+            LocalDate startDate
+            LocalDate endDate
+            Instant createdAt
+        }
+
+        class Room {
+            UUID id PK
+            UUID zoneId FK → Zone
+            String name
+            String description
+            BigDecimal totalSurfaceArea
+            BigDecimal pricePerSqmDaily
+            BigDecimal pricePerSqmWeekly
+            BigDecimal pricePerSqmMonthly
+            RoomStatus status
+            Instant createdAt
+            Instant updatedAt
+            Instant deletedAt
+        }
+
+        class RoomCategory {
+            UUID id PK
+            UUID roomId FK → Room
+            UUID categoryId FK → Category
+            Instant createdAt
+        }
+
+        class GoodsExcelImport {
+            UUID id PK
+            UUID bookingId cross-ref
+            UUID customerId cross-ref
+            String fileName
+            GoodsImportStatus status
+            int totalRows
+            int successRows
+            int failedRows
+            String errorFileUrl
+            Instant arrivalDeadline
+            UUID approvedBy cross-ref
+            Instant approvedAt
+            Instant createdAt
+        }
+
+        class GoodsItem {
+            UUID id PK
+            UUID goodsImportId FK → GoodsExcelImport
+            String name
+            String sku
+            String barcode
+            BigDecimal quantity
+            GoodsItemStatus status
+            Instant createdAt
+            Instant updatedAt
+            Instant deletedAt
+        }
+
+        class GoodsReceipt {
+            UUID id PK
+            UUID bookingId cross-ref
+            UUID receivedBy cross-ref
+            String inboundCarrier
+            Instant receivedAt
+            String notes
+        }
+
+        class GoodsReceiptItem {
+            UUID id PK
+            UUID goodsReceiptId FK → GoodsReceipt
+            UUID goodsItemId FK → GoodsItem
+            BigDecimal expectedQty
+            BigDecimal receivedQty
+            ReceiptCondition condition
+            String notes
+        }
     }
 
-    %% ─────────────────────────────────────────
-    %% WAREHOUSE
-    %% ─────────────────────────────────────────
+    Warehouse "1" --> "0..*" WarehouseImage : images
+    Warehouse "1" --> "0..*" WarehouseExcelImport : imports
+    Warehouse "1" --> "0..*" Zone : zones
+    Zone "1" --> "0..*" ZoneCategory : categories
+    Zone "1" --> "0..*" ZoneAvailability : availabilities
+    Zone "1" --> "0..*" Room : rooms
+    Room "1" --> "0..*" RoomCategory : categories
+    Category "1" --> "0..*" ZoneCategory : zones
+    Category "1" --> "0..*" RoomCategory : rooms
+    GoodsExcelImport "1" --> "0..*" GoodsItem : items
+    GoodsReceipt "1" --> "0..*" GoodsReceiptItem : items
+    GoodsItem "1" --> "0..*" GoodsReceiptItem : receipts
 
-    class Warehouse {
-        -UUID id
-        -UUID ownerId
-        -string name
-        -string description
-        -number totalAreaM2
-        -WarehouseStatus status
-        -boolean isPublished
-        -string[] imageUrls
-        -DateTime createdAt
-        +publish() void
-        +unpublish() void
-        +getAvailableRooms() Room[]
-        +getOccupancyRate() number
-        +calculateRevenue() number
+    %% ============================================================
+    %% RESERVATION SERVICE — reservation_db (6 entities)
+    %% Booking + Billing merged — same DB, real FK invoices → bookings
+    %% ============================================================
+    namespace ReservationService {
+        class Booking {
+            UUID id PK
+            UUID customerId cross-ref
+            UUID warehouseId cross-ref
+            BookingType bookingType
+            UUID roomId cross-ref
+            UUID zoneId cross-ref
+            LocalDate startDate
+            LocalDate endDate
+            BigDecimal surfaceArea
+            BigDecimal totalPrice
+            BookingStatus status
+            Instant createdAt
+            Instant updatedAt
+            Instant deletedAt
+        }
+
+        class BookingExpiryNotification {
+            UUID id PK
+            UUID bookingId FK → Booking UNIQUE
+            Instant notifiedAt
+            NotificationStatus status
+            Instant createdAt
+        }
+
+        class Invoice {
+            UUID id PK
+            UUID customerId cross-ref
+            UUID warehouseId cross-ref
+            UUID bookingId FK → Booking
+            UUID deliveryRequestId cross-ref
+            InvoiceType invoiceType
+            BigDecimal amount
+            String currency
+            InvoiceStatus status
+            LocalDate dueDate
+            Instant createdAt
+            Instant updatedAt
+        }
+
+        class InvoiceItem {
+            UUID id PK
+            UUID invoiceId FK → Invoice
+            String description
+            BigDecimal quantity
+            BigDecimal unitPrice
+            BigDecimal total
+            Instant createdAt
+        }
+
+        class Payment {
+            UUID id PK
+            UUID invoiceId FK → Invoice
+            String stripePaymentId UNIQUE
+            String stripeReceiptUrl
+            BigDecimal amount
+            PaymentStatus status
+            String failureReason
+            Instant paidAt
+            Instant createdAt
+        }
+
+        class CreditNote {
+            UUID id PK
+            UUID invoiceId FK → Invoice
+            String reason
+            BigDecimal amount
+            Instant createdAt
+        }
     }
 
-    class Address {
-        -string street
-        -string city
-        -string country
-        -string postalCode
-        -number latitude
-        -number longitude
-        +toGeoPoint() GeoPoint
+    Booking "1" --> "0..1" BookingExpiryNotification : expiry
+    Booking "1" --> "0..*" Invoice : invoices
+    Invoice "1" --> "0..*" InvoiceItem : items
+    Invoice "1" --> "0..*" Payment : payments
+    Invoice "1" --> "0..*" CreditNote : creditNotes
+
+    %% ============================================================
+    %% DELIVERY SERVICE — delivery_db (5 entities)
+    %% ============================================================
+    namespace DeliveryService {
+        class DeliveryRequest {
+            UUID id PK
+            UUID bookingId cross-ref
+            UUID customerId cross-ref
+            String destinationAddress
+            String destinationCity
+            String destinationCountry
+            LocalDate requestedDate
+            DeliveryStatus status
+            Instant createdAt
+            Instant updatedAt
+        }
+
+        class DeliveryRequestItem {
+            UUID id PK
+            UUID deliveryRequestId FK → DeliveryRequest
+            UUID goodsItemId cross-ref
+            BigDecimal requestedQty
+            BigDecimal pickedQty
+            UUID pickedBy cross-ref
+            Instant pickedAt
+        }
+
+        class DeliveryNotification {
+            UUID id PK
+            UUID deliveryRequestId FK → DeliveryRequest
+            UUID notifiedBy cross-ref
+            Instant notifiedAt
+            DeliveryNotificationStatus status
+            Instant expiresAt
+        }
+
+        class Shipment {
+            UUID id PK
+            UUID deliveryRequestId FK → DeliveryRequest
+            UUID claimedBy cross-ref
+            Instant claimedAt
+            Instant scheduledPickupTime
+            String trackingNumber UNIQUE
+            LocalDate estimatedDeliveryDate
+            LocalDate actualDeliveryDate
+            ShipmentStatus status
+            String notes
+            Instant createdAt
+            Instant updatedAt
+        }
+
+        class ShipmentCheckpoint {
+            UUID id PK
+            UUID shipmentId FK → Shipment
+            ShipmentStatus status
+            String location
+            String note
+            Instant recordedAt
+        }
     }
 
-    class Zone {
-        -UUID id
-        -UUID warehouseId
-        -string name
-        -GoodCategory goodCategory
-        -number temperatureMin
-        -number temperatureMax
-        -boolean humidityControl
-        +getRooms() Room[]
-        +getAvailableCapacity() number
+    DeliveryRequest "1" --> "0..*" DeliveryRequestItem : items
+    DeliveryRequest "1" --> "0..*" DeliveryNotification : notifications
+    DeliveryRequest "1" --> "0..*" Shipment : shipments
+    Shipment "1" --> "0..*" ShipmentCheckpoint : checkpoints
+
+    %% ============================================================
+    %% PLATFORM SERVICE — platform_db (2 entities)
+    %% ============================================================
+    namespace PlatformService {
+        class Notification {
+            UUID id PK
+            UUID userId cross-ref
+            NotificationType type
+            String message
+            Boolean isRead
+            Instant readAt
+            String link
+            Instant createdAt
+        }
+
+        class AuditLog {
+            UUID id PK
+            UUID performedBy
+            String action
+            String entityType
+            UUID entityId
+            JSONB oldValue
+            JSONB newValue
+            Instant createdAt
+        }
     }
 
-    class Room {
-        -UUID id
-        -UUID zoneId
-        -string roomNumber
-        -number areaM2
-        -number pricePerM2
-        -RoomStatus status
-        -UUID currentRentalId
-        +isAvailable() boolean
-        +getTotalPrice() number
-        +reserve() void
-        +release() void
+    %% ============================================================
+    %% SHARED — outbox_events (one per service DB)
+    %% ============================================================
+    namespace Shared {
+        class OutboxEvent {
+            UUID id PK
+            String aggregateType
+            UUID aggregateId
+            String eventType
+            JSONB payload
+            OutboxStatus status
+            Instant createdAt
+            Instant publishedAt
+        }
     }
-
-    %% ─────────────────────────────────────────
-    %% RENTAL
-    %% ─────────────────────────────────────────
-
-    class Rental {
-        -UUID id
-        -UUID customerId
-        -UUID roomId
-        -DateTime startDate
-        -DateTime endDate
-        -number totalCost
-        -RentalStatus status
-        -UUID paymentId
-        +activate() void
-        +terminate() void
-        +extend(endDate) Rental
-        +calculateCost() number
-    }
-
-    %% ─────────────────────────────────────────
-    %% INVENTORY
-    %% ─────────────────────────────────────────
-
-    class GoodItem {
-        -UUID id
-        -UUID rentalId
-        -UUID roomId
-        -string name
-        -GoodCategory category
-        -number quantity
-        -MeasureUnit unit
-        -DateTime expiryDate
-        -string batchCode
-        -DateTime addedAt
-        +updateQuantity(amount) void
-        +isExpiringSoon() boolean
-        +getStockReport() StockReport
-    }
-
-    class InventoryLog {
-        -UUID id
-        -UUID goodItemId
-        -LogAction actionType
-        -number quantityChange
-        -UUID performedBy
-        -string note
-        -DateTime timestamp
-        +getHistory(itemId) InventoryLog[]
-    }
-
-    %% ─────────────────────────────────────────
-    %% ORDER
-    %% ─────────────────────────────────────────
-
-    class Order {
-        -UUID id
-        -UUID customerId
-        -UUID rentalId
-        -UUID staffId
-        -OrderStatus status
-        -Priority priority
-        -string notes
-        -DateTime createdAt
-        -DateTime processedAt
-        +assignStaff(staffId) void
-        +markPackaged() void
-        +cancel() void
-        +getOrderItems() OrderItem[]
-    }
-
-    class OrderItem {
-        -UUID id
-        -UUID orderId
-        -UUID goodItemId
-        -number requestedQty
-        -number packedQty
-        -MeasureUnit unit
-        +confirmPacking(qty) void
-    }
-
-    %% ─────────────────────────────────────────
-    %% DELIVERY
-    %% ─────────────────────────────────────────
-
-    class Delivery {
-        -UUID id
-        -UUID orderId
-        -UUID agentId
-        -UUID destinationId
-        -DeliveryStatus status
-        -DateTime scheduledAt
-        -DateTime pickedUpAt
-        -DateTime deliveredAt
-        -string proofImageUrl
-        -string agentNotes
-        +assignAgent(agentId) void
-        +accept() void
-        +markPickedUp() void
-        +complete(proofUrl) void
-        +fail(reason) void
-    }
-
-    class Destination {
-        -UUID id
-        -UUID customerId
-        -string name
-        -DestinationType type
-        -string contactPerson
-        -string contactPhone
-        +getDeliveryHistory() Delivery[]
-    }
-
-    %% ─────────────────────────────────────────
-    %% NOTIFICATION
-    %% ─────────────────────────────────────────
-
-    class Notification {
-        -UUID id
-        -UUID userId
-        -NotificationType type
-        -string title
-        -string message
-        -boolean isRead
-        -UUID refId
-        -string refType
-        -DateTime createdAt
-        +markRead() void
-        +send() void
-    }
-
-    %% ─────────────────────────────────────────
-    %% PAYMENT
-    %% ─────────────────────────────────────────
-
-    class Payment {
-        -UUID id
-        -UUID rentalId
-        -UUID customerId
-        -number amount
-        -string currency
-        -PaymentMethod method
-        -PaymentStatus status
-        -string transactionId
-        -DateTime paidAt
-        +process() PaymentResult
-        +refund() void
-        +getReceipt() Receipt
-    }
-
-    %% ─────────────────────────────────────────
-    %% REVIEW
-    %% ─────────────────────────────────────────
-
-    class Review {
-        -UUID id
-        -UUID warehouseId
-        -UUID customerId
-        -number rating
-        -string comment
-        -DateTime createdAt
-        +submit() Review
-        +getAverageRating(warehouseId) number
-    }
-
-    %% ─────────────────────────────────────────
-    %% ENUMERATIONS
-    %% ─────────────────────────────────────────
-
-    class UserRole {
-        <<enumeration>>
-        WAREHOUSE_OWNER
-        CUSTOMER
-        STAFF_WORKER
-        DELIVERY_AGENT
-        ADMIN
-    }
-
-    class WarehouseStatus {
-        <<enumeration>>
-        DRAFT
-        PUBLISHED
-        SUSPENDED
-        CLOSED
-    }
-
-    class RoomStatus {
-        <<enumeration>>
-        AVAILABLE
-        RESERVED
-        OCCUPIED
-        MAINTENANCE
-    }
-
-    class RentalStatus {
-        <<enumeration>>
-        PENDING
-        ACTIVE
-        EXPIRED
-        TERMINATED
-    }
-
-    class GoodCategory {
-        <<enumeration>>
-        FOOD
-        MEDICINE
-        COLD_STORAGE
-        ELECTRONICS
-        CHEMICALS
-        GENERAL
-    }
-
-    class MeasureUnit {
-        <<enumeration>>
-        KG
-        G
-        LITRE
-        PIECE
-        BOX
-        PALLET
-    }
-
-    class OrderStatus {
-        <<enumeration>>
-        PLACED
-        ACCEPTED
-        PACKAGING
-        PACKAGED
-        DISPATCHED
-        CANCELLED
-    }
-
-    class DeliveryStatus {
-        <<enumeration>>
-        PENDING
-        ACCEPTED
-        PICKED_UP
-        IN_TRANSIT
-        DELIVERED
-        FAILED
-    }
-
-    class NotificationType {
-        <<enumeration>>
-        ORDER_PLACED
-        PACKAGE_READY
-        DELIVERY_ASSIGNED
-        DELIVERY_DONE
-        SYSTEM
-    }
-
-    class DestinationType {
-        <<enumeration>>
-        MARKET
-        SUPERMARKET
-        RESTAURANT
-        PHARMACY
-        WAREHOUSE
-        OTHER
-    }
-
-    class PaymentMethod {
-        <<enumeration>>
-        CREDIT_CARD
-        DEBIT_CARD
-        BANK_TRANSFER
-        CASH
-        DIGITAL_WALLET
-    }
-
-    class PaymentStatus {
-        <<enumeration>>
-        PENDING
-        COMPLETED
-        FAILED
-        REFUNDED
-    }
-
-    %% ─────────────────────────────────────────
-    %% RELATIONSHIPS
-    %% ─────────────────────────────────────────
-
-    %% Auth
-    User "1" --> "1" AuthToken : generates
-    User "1" --> "0..*" Warehouse : owns
-
-    %% Warehouse structure
-    Warehouse "1" *-- "1" Address : located at
-    Warehouse "1" *-- "1..*" Zone : divided into
-    Zone "1" *-- "1..*" Room : contains
-
-    %% Rental
-    User "1" --> "0..*" Rental : creates
-    Rental "1" --> "1" Room : rents
-    Rental "1" *-- "0..*" GoodItem : stores
-    GoodItem "1" --> "0..*" InventoryLog : tracked by
-
-    %% Order
-    Rental "1" --> "0..*" Order : generates
-    Order "1" *-- "1..*" OrderItem : contains
-    OrderItem "1" --> "1" GoodItem : references
-    User "1" --> "0..*" Order : processes
-
-    %% Delivery
-    Order "1" --> "1" Delivery : fulfilled by
-    Delivery "1" --> "1" Destination : delivers to
-    Destination "1" *-- "1" Address : located at
-    User "1" --> "0..*" Delivery : handles
-
-    %% Support
-    User "1" --> "0..*" Notification : receives
-    Rental "1" --> "0..*" Payment : paid via
-    Warehouse "1" --> "0..*" Review : reviewed in
-    User "1" --> "0..*" Review : writes
-
-    %% Enum usage
-    User --> UserRole : has
-    Warehouse --> WarehouseStatus : has
-    Room --> RoomStatus : has
-    Rental --> RentalStatus : has
-    GoodItem --> GoodCategory : categorized as
-    GoodItem --> MeasureUnit : measured in
-    Order --> OrderStatus : has
-    Delivery --> DeliveryStatus : has
-    Notification --> NotificationType : typed as
-    Destination --> DestinationType : typed as
-    Payment --> PaymentMethod : paid via
-    Payment --> PaymentStatus : has
-    Zone --> GoodCategory : specializes in
 ```
 
 ---
 
-## 🗂️ Entity Summary
+## Enumerations
 
-| Class | Layer | Description |
-|---|---|---|
-| `User` | Auth | Platform user with role-based access |
-| `AuthToken` | Auth | JWT access & refresh token pair |
-| `Warehouse` | Warehouse | Physical warehouse published by owner |
-| `Address` | Warehouse | Location info (used by Warehouse & Destination) |
-| `Zone` | Warehouse | Named section of a warehouse by good category |
-| `Room` | Warehouse | Rentable unit within a zone with m² pricing |
-| `Rental` | Rental | Agreement between customer and a room |
-| `GoodItem` | Inventory | A tracked good stored in a rented room |
-| `InventoryLog` | Inventory | Full audit trail of every stock change |
-| `Order` | Order | Dispatch request created by customer, handled by staff |
-| `OrderItem` | Order | Individual good line item within an order |
-| `Delivery` | Delivery | Delivery task accepted and completed by an agent |
-| `Destination` | Delivery | Target location (market, supermarket, etc.) |
-| `Notification` | Notification | Real-time alert sent to any user role |
-| `Payment` | Payment | Billing record for a rental |
-| `Review` | Review | Customer rating and feedback for a warehouse |
-
----
-
-## 🔢 Enum Summary
-
-| Enum | Used By |
+| Enum | Values |
 |---|---|
-| `UserRole` | `User` — WAREHOUSE_OWNER, CUSTOMER, STAFF_WORKER, DELIVERY_AGENT, ADMIN |
-| `WarehouseStatus` | `Warehouse` — DRAFT, PUBLISHED, SUSPENDED, CLOSED |
-| `RoomStatus` | `Room` — AVAILABLE, RESERVED, OCCUPIED, MAINTENANCE |
-| `RentalStatus` | `Rental` — PENDING, ACTIVE, EXPIRED, TERMINATED |
-| `GoodCategory` | `Zone`, `GoodItem` — FOOD, MEDICINE, COLD_STORAGE, ELECTRONICS, CHEMICALS, GENERAL |
-| `MeasureUnit` | `GoodItem`, `OrderItem` — KG, G, LITRE, PIECE, BOX, PALLET |
-| `OrderStatus` | `Order` — PLACED, ACCEPTED, PACKAGING, PACKAGED, DISPATCHED, CANCELLED |
-| `DeliveryStatus` | `Delivery` — PENDING, ACCEPTED, PICKED_UP, IN_TRANSIT, DELIVERED, FAILED |
-| `NotificationType` | `Notification` — ORDER_PLACED, PACKAGE_READY, DELIVERY_ASSIGNED, DELIVERY_DONE, SYSTEM |
-| `DestinationType` | `Destination` — MARKET, SUPERMARKET, RESTAURANT, PHARMACY, WAREHOUSE, OTHER |
-| `PaymentMethod` | `Payment` — CREDIT_CARD, DEBIT_CARD, BANK_TRANSFER, CASH, DIGITAL_WALLET |
-| `PaymentStatus` | `Payment` — PENDING, COMPLETED, FAILED, REFUNDED |
+| `UserRole` | `SUPER_ADMIN`, `WAREHOUSE_OWNER`, `STAFF`, `DELIVERY_AGENT`, `CUSTOMER` |
+| `UserStatus` | `ACTIVE`, `SUSPENDED`, `PENDING` |
+| `WarehouseStatus` | `DRAFT`, `PUBLISHED`, `SUSPENDED`, `INACTIVE` |
+| `ImportStatus` | `PENDING`, `PROCESSING`, `COMPLETED`, `FAILED` |
+| `TemperatureType` | `AMBIENT`, `REFRIGERATED`, `FROZEN` |
+| `ZoneStatus` | `ACTIVE`, `MAINTENANCE`, `INACTIVE` |
+| `RoomStatus` | `AVAILABLE`, `BOOKED`, `MAINTENANCE` |
+| `GoodsImportStatus` | `PENDING`, `APPROVED`, `REJECTED` |
+| `GoodsItemStatus` | `PENDING`, `IN_WAREHOUSE`, `DELIVERED`, `DAMAGED` |
+| `ReceiptCondition` | `GOOD`, `DAMAGED`, `REJECTED` |
+| `BookingType` | `ROOM`, `ZONE`, `WAREHOUSE` |
+| `BookingStatus` | `PENDING`, `CONFIRMED`, `ACTIVE`, `EXPIRED`, `CANCELLED` |
+| `NotificationStatus` | `SENT`, `ACKNOWLEDGED` |
+| `InvoiceType` | `BOOKING`, `DELIVERY` |
+| `InvoiceStatus` | `DRAFT`, `SENT`, `PAID`, `OVERDUE`, `CANCELLED` |
+| `PaymentStatus` | `PENDING`, `SUCCESS`, `FAILED` |
+| `DeliveryStatus` | `PENDING`, `CONFIRMED`, `PICKING`, `DISPATCHED`, `DELIVERED`, `CANCELLED` |
+| `DeliveryNotificationStatus` | `OPEN`, `CLAIMED`, `EXPIRED` |
+| `ShipmentStatus` | `PENDING`, `PICKED_UP`, `IN_TRANSIT`, `DELIVERED` |
+| `NotificationType` | `WAREHOUSE_APPROVED`, `WAREHOUSE_REJECTED`, `BOOKING_CONFIRMED`, `BOOKING_CANCELLED`, `BOOKING_EXPIRY`, `GOODS_APPROVED`, `GOODS_REJECTED`, `GOODS_DISCREPANCY`, `DELIVERY_AVAILABLE`, `DELIVERY_CLAIMED`, `DELIVERY_PICKUP_REMINDER`, `DELIVERY_UPDATE`, `INVOICE_GENERATED`, `PAYMENT_SUCCESS`, `PAYMENT_FAILED` |
+| `OutboxStatus` | `PENDING`, `SENT`, `FAILED` |
 
 ---
 
-## 🔄 Key Relationship Flows
+## Table Count Summary
 
-```
-WAREHOUSE OWNER
-└── Creates Warehouse
-    └── Defines Zones (by GoodCategory)
-        └── Adds Rooms (area m², price/m²)
-
-CUSTOMER
-└── Rents a Room → Rental
-    └── Stores GoodItems → InventoryLog (audit trail)
-    └── Places Order
-        └── Specifies OrderItems (which goods, how much)
-
-STAFF WORKER
-└── Accepts Order
-    └── Packages OrderItems → marks Order as PACKAGED
-    └── Triggers Notification → Delivery Agent
-
-DELIVERY AGENT
-└── Accepts Delivery
-    └── Picks up packaged goods
-    └── Delivers to Destination (market, supermarket…)
-    └── Uploads proof → marks Delivery DELIVERED
-        └── GoodItem quantities auto-updated ✅
-```
-
----
-
-## 🔗 Relationship Types
-
-| Symbol | Type | Meaning |
-|---|---|---|
-| `*--` | Composition | Child cannot exist without parent |
-| `-->` | Association | Reference / uses relationship |
-| `"1" .. "0..*"` | Multiplicity | One-to-many |
-| `"1" .. "1"` | Multiplicity | One-to-one |
-
----
-
-> 💡 **Tip:** GitHub renders Mermaid diagrams natively in `.md` files — no plugins needed. Just push this file and the diagram will display automatically.
+| Service | Database | Entities | + Outbox |
+|---|---|---|---|
+| Identity | identity_db | 5 | + 1 |
+| Inventory | inventory_db | 13 | + 1 |
+| Reservation | reservation_db | 6 | + 1 |
+| Delivery | delivery_db | 5 | + 1 |
+| Platform | platform_db | 2 | + 1 |
+| **Total** | **5 databases** | **31** | **+ 5 = 36 tables** |

@@ -303,11 +303,7 @@ body {
 
 /* service-colored cards */
 .card-identity { border-left: 4px solid var(--person-border); }
-.card-warehouse { border-left: 4px solid var(--system-border); }
-.card-booking { border-left: 4px solid var(--kafka-border); }
-.card-goods { border-left: 4px solid var(--batch-border); }
 .card-delivery { border-left: 4px solid var(--component-border); }
-.card-billing { border-left: 4px solid var(--system-border); }
 .card-platform { border-left: 4px solid var(--db-border); }
 
 /* ---- KAFKA EVENT CARDS ---- */

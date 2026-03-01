@@ -39,6 +39,7 @@
         <tr><td><strong>Soft delete (deleted_at)</strong></td><td class="desc">Only on entities that need it: rooms, bookings, goods_items, warehouse_owner_profiles. NULL = active.</td></tr>
         <tr><td><strong>Transactional Outbox</strong></td><td class="desc">Every service has an outbox_events table. Business data and events are written in the same DB transaction. Debezium CDC reads the outbox and publishes to Kafka.</td></tr>
         <tr><td><strong>No cross-DB foreign keys</strong></td><td class="desc">In microservices, tables in different databases can't have FK constraints. Cross-service references store the UUID and rely on application-level validation via REST calls.</td></tr>
+        <tr><td><strong>Real FKs within merged services</strong></td><td class="desc">Tables that were merged into the same database (e.g., goods tables into inventory_db, billing tables into reservation_db) now use real foreign key constraints instead of cross-service UUID refs.</td></tr>
       </tbody>
     </table>
   </div>
@@ -58,7 +59,7 @@
           <tr><td>first_name, last_name</td><td>VARCHAR</td><td></td></tr>
           <tr><td>phone</td><td>VARCHAR</td><td></td></tr>
           <tr><td>role</td><td>VARCHAR</td><td>CHECK: SUPER_ADMIN, WAREHOUSE_OWNER, CUSTOMER, STAFF, DELIVERY_AGENT</td></tr>
-          <tr><td>status</td><td>VARCHAR</td><td>CHECK: ACTIVE, INACTIVE, PENDING_APPROVAL</td></tr>
+          <tr><td>status</td><td>VARCHAR</td><td>CHECK: ACTIVE, SUSPENDED, PENDING</td></tr>
         </tbody>
       </table>
     </div>
@@ -98,9 +99,12 @@
     </div>
   </div>
 
-  <!-- Warehouse Service -->
+  <!-- Inventory Service -->
   <div class="section">
-    <div class="section-title">Warehouse Service — warehouse_db</div>
+    <div class="section-title">Inventory Service — inventory_db</div>
+    <div class="explanation">
+      Merged from the former Warehouse Service and Goods Service. All warehouse structure tables and goods tables now share one database with real FK constraints.
+    </div>
 
     <div class="schema-section">
       <div class="schema-header" style="background:var(--system-bg); color:var(--system-text);">warehouses</div>
@@ -128,7 +132,7 @@
           <tr><td>name</td><td>VARCHAR</td><td>UNIQUE per warehouse</td></tr>
           <tr><td>temperature_type</td><td>VARCHAR</td><td>CHECK: AMBIENT, REFRIGERATED, FROZEN</td></tr>
           <tr><td>total_surface_area</td><td>DECIMAL</td><td>m&sup2;</td></tr>
-          <tr><td>status</td><td>VARCHAR</td><td>CHECK: ACTIVE, MAINTENANCE, CLOSED</td></tr>
+          <tr><td>status</td><td>VARCHAR</td><td>CHECK: ACTIVE, MAINTENANCE, INACTIVE</td></tr>
         </tbody>
       </table>
     </div>
@@ -145,7 +149,7 @@
           <tr><td>price_per_sqm_daily</td><td>DECIMAL</td><td>CHECK &gt; 0</td></tr>
           <tr><td>price_per_sqm_weekly</td><td>DECIMAL</td><td>CHECK &gt; 0</td></tr>
           <tr><td>price_per_sqm_monthly</td><td>DECIMAL</td><td>CHECK &gt; 0</td></tr>
-          <tr><td>status</td><td>VARCHAR</td><td>CHECK: AVAILABLE, BOOKED, MAINTENANCE, CLOSED</td></tr>
+          <tr><td>status</td><td>VARCHAR</td><td>CHECK: AVAILABLE, BOOKED, MAINTENANCE</td></tr>
           <tr><td>deleted_at</td><td>TIMESTAMPTZ</td><td>nullable — soft delete</td></tr>
         </tbody>
       </table>
@@ -165,11 +169,44 @@
         </tbody>
       </table>
     </div>
+
+    <div class="schema-section">
+      <div class="schema-header" style="background:var(--batch-bg); color:var(--batch-text);">goods_excel_imports</div>
+      <table class="schema-table">
+        <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="pk">id</td><td>UUID</td><td>Primary key</td></tr>
+          <tr><td class="xref">booking_id</td><td>UUID</td><td>cross-service ref to reservation_db</td></tr>
+          <tr><td class="xref">customer_id</td><td>UUID</td><td>cross-service ref to identity_db</td></tr>
+          <tr><td>file_name</td><td>VARCHAR</td><td></td></tr>
+          <tr><td>status</td><td>VARCHAR</td><td>CHECK: PENDING, APPROVED, REJECTED</td></tr>
+          <tr><td>total_rows, success_rows, failed_rows</td><td>INT</td><td></td></tr>
+          <tr><td>arrival_deadline</td><td>TIMESTAMPTZ</td><td>Set when approved</td></tr>
+          <tr><td class="xref">approved_by</td><td>UUID</td><td>cross-service ref (nullable)</td></tr>
+          <tr><td>approved_at</td><td>TIMESTAMPTZ</td><td>nullable</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="schema-section">
+      <div class="schema-header" style="background:var(--batch-bg); color:var(--batch-text);">goods_items &bull; goods_receipts &bull; goods_receipt_items</div>
+      <table class="schema-table">
+        <thead><tr><th>Table</th><th>Key Columns</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>goods_items</td><td class="mono">goods_import_id (FK), name, sku, barcode, quantity, status</td><td>SKU &amp; barcode UNIQUE per import. Soft-deletable.</td></tr>
+          <tr><td>goods_receipts</td><td class="mono">booking_id (xref), received_by (xref), inbound_carrier</td><td>Staff confirmation when goods arrive</td></tr>
+          <tr><td>goods_receipt_items</td><td class="mono">goods_receipt_id (FK), goods_item_id (FK), expected/received qty, condition</td><td>UNIQUE per receipt+item. Condition: GOOD/DAMAGED/REJECTED</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
-  <!-- Booking Service -->
+  <!-- Reservation Service -->
   <div class="section">
-    <div class="section-title">Booking Service — booking_db</div>
+    <div class="section-title">Reservation Service — reservation_db</div>
+    <div class="explanation">
+      Merged from the former Booking Service and Billing Service. Booking and billing tables now share one database — invoices have real FKs to bookings.
+    </div>
 
     <div class="schema-section">
       <div class="schema-header" style="background:var(--kafka-bg); color:var(--kafka-text);">bookings</div>
@@ -184,7 +221,7 @@
           <tr><td class="xref">zone_id</td><td>UUID</td><td>nullable — cross-service ref</td></tr>
           <tr><td>start_date, end_date</td><td>DATE</td><td>CHECK: end &gt; start</td></tr>
           <tr><td>surface_area</td><td>DECIMAL</td><td>m&sup2;</td></tr>
-          <tr><td>total_price</td><td>DECIMAL</td><td>CHECK &gt; 0</td></tr>
+          <tr><td>total_price</td><td>DECIMAL</td><td>CHECK &ge; 0</td></tr>
           <tr><td>status</td><td>VARCHAR</td><td>CHECK: PENDING, CONFIRMED, ACTIVE, EXPIRED, CANCELLED</td></tr>
           <tr><td>deleted_at</td><td>TIMESTAMPTZ</td><td>nullable — soft delete</td></tr>
         </tbody>
@@ -206,38 +243,37 @@
         </tbody>
       </table>
     </div>
-  </div>
-
-  <!-- Goods Service -->
-  <div class="section">
-    <div class="section-title">Goods Service — goods_db</div>
 
     <div class="schema-section">
-      <div class="schema-header" style="background:var(--batch-bg); color:var(--batch-text);">goods_excel_imports</div>
+      <div class="schema-header" style="background:var(--system-bg); color:var(--system-text);">invoices</div>
       <table class="schema-table">
         <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
         <tbody>
           <tr><td class="pk">id</td><td>UUID</td><td>Primary key</td></tr>
-          <tr><td class="xref">booking_id</td><td>UUID</td><td>cross-service ref</td></tr>
           <tr><td class="xref">customer_id</td><td>UUID</td><td>cross-service ref</td></tr>
-          <tr><td>file_name</td><td>VARCHAR</td><td></td></tr>
-          <tr><td>status</td><td>VARCHAR</td><td>CHECK: PENDING, APPROVED, REJECTED</td></tr>
-          <tr><td>total_rows, success_rows, failed_rows</td><td>INT</td><td></td></tr>
-          <tr><td>arrival_deadline</td><td>TIMESTAMPTZ</td><td>Set when approved</td></tr>
-          <tr><td class="xref">approved_by</td><td>UUID</td><td>cross-service ref (nullable)</td></tr>
-          <tr><td>approved_at</td><td>TIMESTAMPTZ</td><td>nullable</td></tr>
+          <tr><td class="xref">warehouse_id</td><td>UUID</td><td>cross-service ref</td></tr>
+          <tr><td class="fk">booking_id</td><td>UUID</td><td>nullable — FK &rarr; bookings (now same DB)</td></tr>
+          <tr><td class="xref">delivery_request_id</td><td>UUID</td><td>nullable — cross-service ref to delivery_db</td></tr>
+          <tr><td>invoice_type</td><td>VARCHAR</td><td>CHECK: BOOKING, DELIVERY</td></tr>
+          <tr><td>amount</td><td>DECIMAL</td><td>CHECK &ge; 0</td></tr>
+          <tr><td>currency</td><td>VARCHAR</td><td></td></tr>
+          <tr><td>status</td><td>VARCHAR</td><td>CHECK: DRAFT, SENT, PAID, OVERDUE, CANCELLED</td></tr>
+          <tr><td>due_date</td><td>DATE</td><td></td></tr>
         </tbody>
       </table>
     </div>
+    <div class="explanation">
+      <strong>Discriminated union CHECK:</strong> BOOKING &rarr; booking_id NOT NULL (FK), delivery_request_id NULL | DELIVERY &rarr; delivery_request_id NOT NULL (xref), booking_id NULL
+    </div>
 
     <div class="schema-section">
-      <div class="schema-header" style="background:var(--batch-bg); color:var(--batch-text);">goods_items &bull; goods_receipts &bull; goods_receipt_items</div>
+      <div class="schema-header" style="background:var(--system-bg); color:var(--system-text);">invoice_items &bull; payments &bull; credit_notes</div>
       <table class="schema-table">
         <thead><tr><th>Table</th><th>Key Columns</th><th>Notes</th></tr></thead>
         <tbody>
-          <tr><td>goods_items</td><td class="mono">goods_import_id (FK), name, sku, barcode, quantity, status</td><td>SKU &amp; barcode UNIQUE per import. Soft-deletable.</td></tr>
-          <tr><td>goods_receipts</td><td class="mono">booking_id (xref), received_by (xref), inbound_carrier</td><td>Staff confirmation when goods arrive</td></tr>
-          <tr><td>goods_receipt_items</td><td class="mono">goods_receipt_id (FK), goods_item_id (FK), expected/received qty, condition</td><td>UNIQUE per receipt+item. Condition: GOOD/DAMAGED/REJECTED</td></tr>
+          <tr><td>invoice_items</td><td class="mono">invoice_id (FK), description, quantity, unit_price, total</td><td>Line items</td></tr>
+          <tr><td>payments</td><td class="mono">invoice_id (FK), stripe_payment_id (UNIQUE), amount, status</td><td>Tracks receipt URL and failure reason</td></tr>
+          <tr><td>credit_notes</td><td class="mono">invoice_id (FK), reason, amount</td><td>Issued by warehouse owner</td></tr>
         </tbody>
       </table>
     </div>
@@ -271,45 +307,6 @@
     </div>
   </div>
 
-  <!-- Billing Service -->
-  <div class="section">
-    <div class="section-title">Billing Service — billing_db</div>
-
-    <div class="schema-section">
-      <div class="schema-header" style="background:var(--system-bg); color:var(--system-text);">invoices</div>
-      <table class="schema-table">
-        <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
-        <tbody>
-          <tr><td class="pk">id</td><td>UUID</td><td>Primary key</td></tr>
-          <tr><td class="xref">customer_id</td><td>UUID</td><td>cross-service ref</td></tr>
-          <tr><td class="xref">warehouse_id</td><td>UUID</td><td>cross-service ref</td></tr>
-          <tr><td class="xref">booking_id</td><td>UUID</td><td>nullable — cross-service ref</td></tr>
-          <tr><td class="xref">delivery_request_id</td><td>UUID</td><td>nullable — cross-service ref</td></tr>
-          <tr><td>invoice_type</td><td>VARCHAR</td><td>CHECK: BOOKING, DELIVERY</td></tr>
-          <tr><td>amount</td><td>DECIMAL</td><td>CHECK &gt; 0</td></tr>
-          <tr><td>currency</td><td>VARCHAR</td><td></td></tr>
-          <tr><td>status</td><td>VARCHAR</td><td>CHECK: DRAFT, SENT, PAID, OVERDUE, CANCELLED</td></tr>
-          <tr><td>due_date</td><td>DATE</td><td></td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="explanation">
-      <strong>Discriminated union CHECK:</strong> BOOKING &rarr; booking_id NOT NULL, delivery_request_id NULL | DELIVERY &rarr; delivery_request_id NOT NULL, booking_id NULL
-    </div>
-
-    <div class="schema-section">
-      <div class="schema-header" style="background:var(--system-bg); color:var(--system-text);">invoice_items &bull; payments &bull; credit_notes</div>
-      <table class="schema-table">
-        <thead><tr><th>Table</th><th>Key Columns</th><th>Notes</th></tr></thead>
-        <tbody>
-          <tr><td>invoice_items</td><td class="mono">invoice_id (FK), description, quantity, unit_price, total</td><td>Line items</td></tr>
-          <tr><td>payments</td><td class="mono">invoice_id (FK), stripe_payment_id (UNIQUE), amount, status</td><td>Tracks receipt URL and failure reason</td></tr>
-          <tr><td>credit_notes</td><td class="mono">invoice_id (FK), reason, amount</td><td>Issued by warehouse owner</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
   <!-- Platform Service -->
   <div class="section">
     <div class="section-title">Platform Service — platform_db</div>
@@ -335,13 +332,11 @@
       </thead>
       <tbody>
         <tr><td><strong>Identity</strong></td><td class="mono">identity_db</td><td>5 + outbox</td><td class="desc">users, warehouse_owner_profiles, customer_profiles, staff_profiles, delivery_agent_profiles</td></tr>
-        <tr><td><strong>Warehouse</strong></td><td class="mono">warehouse_db</td><td>9 + outbox</td><td class="desc">warehouses, warehouse_images, warehouse_excel_imports, categories, zones, zone_categories, zone_availabilities, rooms, room_categories</td></tr>
-        <tr><td><strong>Booking</strong></td><td class="mono">booking_db</td><td>2 + outbox</td><td class="desc">bookings, booking_expiry_notifications</td></tr>
-        <tr><td><strong>Goods</strong></td><td class="mono">goods_db</td><td>4 + outbox</td><td class="desc">goods_excel_imports, goods_items, goods_receipts, goods_receipt_items</td></tr>
+        <tr><td><strong>Inventory</strong></td><td class="mono">inventory_db</td><td>13 + outbox</td><td class="desc">warehouses, warehouse_images, warehouse_excel_imports, categories, zones, zone_categories, zone_availabilities, rooms, room_categories, goods_excel_imports, goods_items, goods_receipts, goods_receipt_items</td></tr>
+        <tr><td><strong>Reservation</strong></td><td class="mono">reservation_db</td><td>6 + outbox</td><td class="desc">bookings, booking_expiry_notifications, invoices, invoice_items, payments, credit_notes</td></tr>
         <tr><td><strong>Delivery</strong></td><td class="mono">delivery_db</td><td>5 + outbox</td><td class="desc">delivery_requests, delivery_request_items, delivery_notifications, shipments, shipment_checkpoints</td></tr>
-        <tr><td><strong>Billing</strong></td><td class="mono">billing_db</td><td>4 + outbox</td><td class="desc">invoices, invoice_items, payments, credit_notes</td></tr>
         <tr><td><strong>Platform</strong></td><td class="mono">platform_db</td><td>2 + outbox</td><td class="desc">notifications, audit_logs</td></tr>
-        <tr class="highlight-row"><td><strong>Total</strong></td><td></td><td><strong>31 + 7 = 38</strong></td><td>7 services &middot; 7 databases &middot; Transactional Outbox pattern</td></tr>
+        <tr class="highlight-row"><td><strong>Total</strong></td><td></td><td><strong>31 + 5 = 36</strong></td><td>5 services &middot; 5 databases &middot; Transactional Outbox pattern</td></tr>
       </tbody>
     </table>
   </div>

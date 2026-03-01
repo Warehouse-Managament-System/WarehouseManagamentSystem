@@ -19,7 +19,7 @@
 <div class="site-header">
   <span class="tag">ARCHITECTURE DOCUMENTATION</span>
   <h1>Warehouse<span>Management</span>System</h1>
-  <p>A B2B SaaS platform for warehouse space rental and logistics. Built as a microservices architecture with 7 independently deployable Spring Boot services, event-driven communication via Apache Kafka, and database-per-service isolation.</p>
+  <p>A B2B SaaS platform for warehouse space rental and logistics. Built as a microservices architecture with 5 independently deployable Spring Boot services, event-driven communication via Apache Kafka, and database-per-service isolation.</p>
 </div>
 
 <div class="page-content">
@@ -30,19 +30,23 @@
     <div class="info-grid">
       <div class="info-box">
         <h4>STYLE</h4>
-        <p>Microservices (7 services), each with its own PostgreSQL database. No shared database access.</p>
+        <p>Microservices (5 services), each with its own PostgreSQL database. No shared database access.</p>
       </div>
       <div class="info-box">
         <h4>COMMUNICATION</h4>
         <p><strong>Async:</strong> Kafka via Transactional Outbox + Debezium CDC<br><strong>Sync:</strong> REST/HTTP via OpenFeign + Resilience4j circuit breakers</p>
       </div>
       <div class="info-box">
+        <h4>AUTH</h4>
+        <p>Gateway-centralized JWT. Token validated once at API Gateway, user identity forwarded as trusted headers (X-User-Id, X-User-Role, X-User-Email) to downstream services.</p>
+      </div>
+      <div class="info-box">
         <h4>INFRASTRUCTURE</h4>
         <ul>
-          <li>Spring Cloud Gateway (API Gateway)</li>
+          <li>Spring Cloud Gateway (API Gateway + JWT validation)</li>
           <li>Netflix Eureka (Service Discovery)</li>
           <li>Spring Cloud Config (Centralized Config)</li>
-          <li>Micrometer + Zipkin (Distributed Tracing)</li>
+          <li>OpenTelemetry + Grafana Tempo + Loki (Observability)</li>
         </ul>
       </div>
       <div class="info-box">
@@ -52,6 +56,15 @@
           <li>Redis 8 (booking availability locks)</li>
           <li>Stripe (Checkout + Webhooks)</li>
           <li>Apache POI (Excel import/export)</li>
+        </ul>
+      </div>
+      <div class="info-box">
+        <h4>OBSERVABILITY</h4>
+        <ul>
+          <li>OpenTelemetry (instrumentation)</li>
+          <li>Grafana Tempo (distributed traces)</li>
+          <li>Grafana Loki + Promtail (log aggregation)</li>
+          <li>Grafana (unified dashboards)</li>
         </ul>
       </div>
     </div>
@@ -66,18 +79,16 @@
           <tr><th>Service</th><th>Port</th><th>Database</th><th>Responsibilities</th></tr>
         </thead>
         <tbody>
-          <tr><td><strong>Identity Service</strong></td><td class="mono">8081</td><td class="mono">identity_db</td><td class="desc">Auth, JWT, users, all profile types, Super Admin ops</td></tr>
-          <tr><td><strong>Warehouse Service</strong></td><td class="mono">8082</td><td class="mono">warehouse_db</td><td class="desc">Warehouses, zones, rooms, categories, Excel import</td></tr>
-          <tr><td><strong>Booking Service</strong></td><td class="mono">8083</td><td class="mono">booking_db</td><td class="desc">Booking lifecycle, availability checks via Redis</td></tr>
-          <tr><td><strong>Goods Service</strong></td><td class="mono">8084</td><td class="mono">goods_db</td><td class="desc">Goods Excel import, items, receipts, discrepancy handling</td></tr>
+          <tr><td><strong>Identity Service</strong></td><td class="mono">8081</td><td class="mono">identity_db</td><td class="desc">Auth, JWT token creation, users, all profile types, Super Admin ops</td></tr>
+          <tr><td><strong>Inventory Service</strong></td><td class="mono">8082</td><td class="mono">inventory_db</td><td class="desc">Warehouses, zones, rooms, categories, Excel import, goods items, receipts, discrepancy handling</td></tr>
+          <tr><td><strong>Reservation Service</strong></td><td class="mono">8083</td><td class="mono">reservation_db</td><td class="desc">Booking lifecycle, availability checks via Redis, invoices, Stripe payments, credit notes</td></tr>
           <tr><td><strong>Delivery Service</strong></td><td class="mono">8085</td><td class="mono">delivery_db</td><td class="desc">Delivery requests, picking, shipments, checkpoints</td></tr>
-          <tr><td><strong>Billing Service</strong></td><td class="mono">8086</td><td class="mono">billing_db</td><td class="desc">Invoices, Stripe payments, credit notes</td></tr>
           <tr><td><strong>Platform Service</strong></td><td class="mono">8087</td><td class="mono">platform_db</td><td class="desc">Notifications, audit logs, scheduled batch jobs</td></tr>
         </tbody>
       </table>
     </div>
     <div class="explanation" style="margin-top:16px;">
-      <strong>Infrastructure:</strong> API Gateway (8080), Eureka (8761), Config Server (8888), Zipkin (9411).
+      <strong>Infrastructure:</strong> API Gateway (8080), Eureka (8761), Config Server (8888), Grafana (3000), Tempo (3200), Loki (3100).
     </div>
   </div>
 
@@ -125,7 +136,7 @@
       <a href="database.html" class="card" style="text-decoration:none; border-top:3px solid var(--db-border);">
         <span class="card-tag">DATABASE</span>
         <h3 style="color:var(--text);">Database Architecture</h3>
-        <p>Design decisions, 38 tables across 7 databases, entity relationships</p>
+        <p>Design decisions, 36 tables across 5 databases, entity relationships</p>
       </a>
       <a href="api.html" class="card" style="text-decoration:none; border-top:3px solid var(--system-border);">
         <span class="card-tag">REST API</span>
@@ -135,7 +146,7 @@
       <a href="kafka.html" class="card" style="text-decoration:none; border-top:3px solid var(--kafka-border);">
         <span class="card-tag">EVENTS</span>
         <h3 style="color:var(--text);">Kafka Events</h3>
-        <p>16 event types, payload contracts, consumer groups, Dead Letter Topics</p>
+        <p>Event types, payload contracts, consumer groups, Dead Letter Topics</p>
       </a>
     </div>
   </div>
@@ -155,12 +166,12 @@
           <tr><td>Database</td><td>PostgreSQL 18, Spring Data JPA, Flyway</td></tr>
           <tr><td>Messaging</td><td>Apache Kafka 4, Spring Kafka, Debezium CDC</td></tr>
           <tr><td>Cache</td><td>Redis 8, Spring Data Redis</td></tr>
-          <tr><td>Security</td><td>Spring Security 7, JWT (jjwt)</td></tr>
+          <tr><td>Security</td><td>Spring Security 7, JWT (jjwt) — validated at API Gateway</td></tr>
           <tr><td>Payments</td><td>Stripe Java SDK</td></tr>
           <tr><td>Excel</td><td>Apache POI</td></tr>
           <tr><td>Resilience</td><td>Resilience4j (circuit breaker, retry, time limiter)</td></tr>
           <tr><td>Service Comm</td><td>OpenFeign, Spring Cloud LoadBalancer</td></tr>
-          <tr><td>Tracing</td><td>Micrometer Tracing, Zipkin</td></tr>
+          <tr><td>Observability</td><td>OpenTelemetry, Grafana Tempo, Grafana Loki, Grafana</td></tr>
           <tr><td>Containers</td><td>Docker, Docker Compose</td></tr>
         </tbody>
       </table>

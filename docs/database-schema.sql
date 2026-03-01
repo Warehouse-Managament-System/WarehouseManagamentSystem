@@ -1,9 +1,10 @@
 -- ============================================================
 -- Warehouse Management System — PostgreSQL Schema
+-- 5 services · 5 databases · 31 tables + 5 outbox tables
 -- ============================================================
 
 -- ============================================================
--- AUTH & USERS
+-- IDENTITY SERVICE — identity_db
 -- ============================================================
 
 CREATE TABLE users (
@@ -18,55 +19,6 @@ CREATE TABLE users (
     created_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
-
--- ============================================================
--- WAREHOUSE (must be created before profile tables that reference it)
--- ============================================================
-
-CREATE TABLE warehouses (
-    id                 UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
-    owner_id           UUID          NOT NULL REFERENCES users(id),
-    name               VARCHAR(255)  NOT NULL,
-    description        TEXT          NOT NULL,
-    address            VARCHAR(255)  NOT NULL,
-    city               VARCHAR(100)  NOT NULL,
-    country            VARCHAR(100)  NOT NULL,
-    latitude           DECIMAL(9,6)  NOT NULL CHECK (latitude BETWEEN -90 AND 90),
-    longitude          DECIMAL(9,6)  NOT NULL CHECK (longitude BETWEEN -180 AND 180),
-    total_surface_area DECIMAL(10,2) NOT NULL CHECK (total_surface_area > 0),
-    status             VARCHAR(20)   NOT NULL CHECK (status IN ('DRAFT','PUBLISHED','SUSPENDED','INACTIVE')),
-    created_at         TIMESTAMPTZ   NOT NULL DEFAULT now(),
-    updated_at         TIMESTAMPTZ   NOT NULL DEFAULT now()
-);
-
-CREATE TABLE warehouse_images (
-    id           UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    warehouse_id UUID         NOT NULL REFERENCES warehouses(id) ON DELETE CASCADE,
-    url          VARCHAR(500) NOT NULL,
-    is_primary   BOOLEAN      NOT NULL DEFAULT false,
-    created_at   TIMESTAMPTZ  NOT NULL DEFAULT now()
-);
-
-CREATE UNIQUE INDEX idx_warehouse_images_one_primary
-    ON warehouse_images (warehouse_id)
-    WHERE is_primary = true;
-
-CREATE TABLE warehouse_excel_imports (
-    id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    warehouse_id   UUID         NOT NULL REFERENCES warehouses(id) ON DELETE CASCADE,
-    owner_id       UUID         NOT NULL REFERENCES users(id),
-    file_name      VARCHAR(255) NOT NULL,
-    status         VARCHAR(20)  NOT NULL CHECK (status IN ('PENDING','PROCESSING','COMPLETED','FAILED')),
-    total_rows     INT          NOT NULL DEFAULT 0 CHECK (total_rows >= 0),
-    success_rows   INT          NOT NULL DEFAULT 0 CHECK (success_rows >= 0),
-    failed_rows    INT          NOT NULL DEFAULT 0 CHECK (failed_rows >= 0),
-    error_file_url VARCHAR(500) NOT NULL DEFAULT '',
-    created_at     TIMESTAMPTZ  NOT NULL DEFAULT now()
-);
-
--- ============================================================
--- USER PROFILES (after warehouses, since staff/agent reference it)
--- ============================================================
 
 CREATE TABLE warehouse_owner_profiles (
     id               UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -100,7 +52,7 @@ CREATE TABLE customer_profiles (
 CREATE TABLE staff_profiles (
     id           UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id      UUID         NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-    warehouse_id UUID         NOT NULL REFERENCES warehouses(id),
+    warehouse_id UUID         NOT NULL,    -- cross-service ref to inventory_db.warehouses
     position     VARCHAR(100) NOT NULL,
     created_at   TIMESTAMPTZ  NOT NULL DEFAULT now(),
     updated_at   TIMESTAMPTZ  NOT NULL DEFAULT now()
@@ -109,15 +61,61 @@ CREATE TABLE staff_profiles (
 CREATE TABLE delivery_agent_profiles (
     id           UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id      UUID         NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-    warehouse_id UUID         NOT NULL REFERENCES warehouses(id),
+    warehouse_id UUID         NOT NULL,    -- cross-service ref to inventory_db.warehouses
     vehicle_info VARCHAR(255) NOT NULL,
     created_at   TIMESTAMPTZ  NOT NULL DEFAULT now(),
     updated_at   TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
 
 -- ============================================================
--- CATEGORIES (standalone, linked to zones/rooms via junction tables)
+-- INVENTORY SERVICE — inventory_db
+-- Merged: Warehouse + Goods (same DB, real FKs between them)
 -- ============================================================
+
+-- Warehouses
+
+CREATE TABLE warehouses (
+    id                 UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id           UUID          NOT NULL,   -- cross-service ref to identity_db.users
+    name               VARCHAR(255)  NOT NULL,
+    description        TEXT          NOT NULL,
+    address            VARCHAR(255)  NOT NULL,
+    city               VARCHAR(100)  NOT NULL,
+    country            VARCHAR(100)  NOT NULL,
+    latitude           DECIMAL(9,6)  NOT NULL CHECK (latitude BETWEEN -90 AND 90),
+    longitude          DECIMAL(9,6)  NOT NULL CHECK (longitude BETWEEN -180 AND 180),
+    total_surface_area DECIMAL(10,2) NOT NULL CHECK (total_surface_area > 0),
+    status             VARCHAR(20)   NOT NULL CHECK (status IN ('DRAFT','PUBLISHED','SUSPENDED','INACTIVE')),
+    created_at         TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    updated_at         TIMESTAMPTZ   NOT NULL DEFAULT now()
+);
+
+CREATE TABLE warehouse_images (
+    id           UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    warehouse_id UUID         NOT NULL REFERENCES warehouses(id) ON DELETE CASCADE,
+    url          VARCHAR(500) NOT NULL,
+    is_primary   BOOLEAN      NOT NULL DEFAULT false,
+    created_at   TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX idx_warehouse_images_one_primary
+    ON warehouse_images (warehouse_id)
+    WHERE is_primary = true;
+
+CREATE TABLE warehouse_excel_imports (
+    id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    warehouse_id   UUID         NOT NULL REFERENCES warehouses(id) ON DELETE CASCADE,
+    owner_id       UUID         NOT NULL,   -- cross-service ref to identity_db.users
+    file_name      VARCHAR(255) NOT NULL,
+    status         VARCHAR(20)  NOT NULL CHECK (status IN ('PENDING','PROCESSING','COMPLETED','FAILED')),
+    total_rows     INT          NOT NULL DEFAULT 0 CHECK (total_rows >= 0),
+    success_rows   INT          NOT NULL DEFAULT 0 CHECK (success_rows >= 0),
+    failed_rows    INT          NOT NULL DEFAULT 0 CHECK (failed_rows >= 0),
+    error_file_url VARCHAR(500) NOT NULL DEFAULT '',
+    created_at     TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+
+-- Categories
 
 CREATE TABLE categories (
     id          UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -126,9 +124,7 @@ CREATE TABLE categories (
     created_at  TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
 
--- ============================================================
--- ZONES & ROOMS
--- ============================================================
+-- Zones & Rooms
 
 CREATE TABLE zones (
     id                 UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -184,17 +180,73 @@ CREATE TABLE room_categories (
     UNIQUE (room_id, category_id)
 );
 
+-- Goods (now in same DB as warehouses — real FKs to goods_excel_imports)
+
+CREATE TABLE goods_excel_imports (
+    id               UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    booking_id       UUID         NOT NULL,   -- cross-service ref to reservation_db.bookings
+    customer_id      UUID         NOT NULL,   -- cross-service ref to identity_db.users
+    file_name        VARCHAR(255) NOT NULL,
+    status           VARCHAR(20)  NOT NULL CHECK (status IN ('PENDING','APPROVED','REJECTED')),
+    total_rows       INT          NOT NULL DEFAULT 0 CHECK (total_rows >= 0),
+    success_rows     INT          NOT NULL DEFAULT 0 CHECK (success_rows >= 0),
+    failed_rows      INT          NOT NULL DEFAULT 0 CHECK (failed_rows >= 0),
+    error_file_url   VARCHAR(500) NOT NULL DEFAULT '',
+    arrival_deadline TIMESTAMPTZ,
+    approved_by      UUID,        -- cross-service ref to identity_db.users
+    approved_at      TIMESTAMPTZ,
+    created_at       TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+
+CREATE TABLE goods_items (
+    id              UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+    goods_import_id UUID          NOT NULL REFERENCES goods_excel_imports(id) ON DELETE CASCADE,
+    name            VARCHAR(255)  NOT NULL,
+    sku             VARCHAR(100)  NOT NULL,
+    barcode         VARCHAR(100)  NOT NULL,
+    quantity        DECIMAL(10,2) NOT NULL CHECK (quantity > 0),
+    status          VARCHAR(20)   NOT NULL CHECK (status IN ('PENDING','IN_WAREHOUSE','DELIVERED','DAMAGED')),
+    created_at      TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ   NOT NULL DEFAULT now(),
+    deleted_at      TIMESTAMPTZ,
+    UNIQUE (goods_import_id, sku),
+    UNIQUE (goods_import_id, barcode)
+);
+
+CREATE TABLE goods_receipts (
+    id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    booking_id      UUID         NOT NULL,   -- cross-service ref to reservation_db.bookings
+    received_by     UUID         NOT NULL,   -- cross-service ref to identity_db.users
+    inbound_carrier VARCHAR(255) NOT NULL,
+    received_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    notes           TEXT         NOT NULL DEFAULT ''
+);
+
+CREATE TABLE goods_receipt_items (
+    id               UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+    goods_receipt_id UUID          NOT NULL REFERENCES goods_receipts(id) ON DELETE CASCADE,
+    goods_item_id    UUID          NOT NULL REFERENCES goods_items(id),
+    expected_qty     DECIMAL(10,2) NOT NULL CHECK (expected_qty > 0),
+    received_qty     DECIMAL(10,2) NOT NULL CHECK (received_qty >= 0),
+    condition        VARCHAR(10)   NOT NULL CHECK (condition IN ('GOOD','DAMAGED','REJECTED')),
+    notes            TEXT          NOT NULL DEFAULT '',
+    UNIQUE (goods_receipt_id, goods_item_id)
+);
+
 -- ============================================================
--- BOOKING
+-- RESERVATION SERVICE — reservation_db
+-- Merged: Booking + Billing (same DB, real FK from invoices → bookings)
 -- ============================================================
+
+-- Bookings
 
 CREATE TABLE bookings (
     id           UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
-    customer_id  UUID          NOT NULL REFERENCES users(id),
-    warehouse_id UUID          NOT NULL REFERENCES warehouses(id),
+    customer_id  UUID          NOT NULL,   -- cross-service ref to identity_db.users
+    warehouse_id UUID          NOT NULL,   -- cross-service ref to inventory_db.warehouses
     booking_type VARCHAR(20)   NOT NULL CHECK (booking_type IN ('ROOM','ZONE','WAREHOUSE')),
-    room_id      UUID          REFERENCES rooms(id),
-    zone_id      UUID          REFERENCES zones(id),
+    room_id      UUID,                     -- cross-service ref to inventory_db.rooms
+    zone_id      UUID,                     -- cross-service ref to inventory_db.zones
     start_date   DATE          NOT NULL,
     end_date     DATE          NOT NULL,
     surface_area DECIMAL(10,2) NOT NULL CHECK (surface_area > 0),
@@ -219,136 +271,14 @@ CREATE TABLE booking_expiry_notifications (
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- ============================================================
--- GOODS
--- ============================================================
-
-CREATE TABLE goods_excel_imports (
-    id               UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    booking_id       UUID         NOT NULL REFERENCES bookings(id),
-    customer_id      UUID         NOT NULL REFERENCES users(id),
-    file_name        VARCHAR(255) NOT NULL,
-    status           VARCHAR(20)  NOT NULL CHECK (status IN ('PENDING','APPROVED','REJECTED')),
-    total_rows       INT          NOT NULL DEFAULT 0 CHECK (total_rows >= 0),
-    success_rows     INT          NOT NULL DEFAULT 0 CHECK (success_rows >= 0),
-    failed_rows      INT          NOT NULL DEFAULT 0 CHECK (failed_rows >= 0),
-    error_file_url   VARCHAR(500) NOT NULL DEFAULT '',
-    arrival_deadline TIMESTAMPTZ  NOT NULL,
-    approved_by      UUID         REFERENCES users(id),
-    approved_at      TIMESTAMPTZ,
-    created_at       TIMESTAMPTZ  NOT NULL DEFAULT now()
-);
-
-CREATE TABLE goods_items (
-    id              UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
-    goods_import_id UUID          NOT NULL REFERENCES goods_excel_imports(id) ON DELETE CASCADE,
-    name            VARCHAR(255)  NOT NULL,
-    sku             VARCHAR(100)  NOT NULL,
-    barcode         VARCHAR(100)  NOT NULL,
-    quantity        DECIMAL(10,2) NOT NULL CHECK (quantity > 0),
-    status          VARCHAR(20)   NOT NULL CHECK (status IN ('PENDING','IN_WAREHOUSE','DELIVERED','DAMAGED')),
-    created_at      TIMESTAMPTZ   NOT NULL DEFAULT now(),
-    updated_at      TIMESTAMPTZ   NOT NULL DEFAULT now(),
-    deleted_at      TIMESTAMPTZ,
-    UNIQUE (goods_import_id, sku),
-    UNIQUE (goods_import_id, barcode)
-);
-
--- ============================================================
--- GOODS RECEIPTS
--- ============================================================
-
-CREATE TABLE goods_receipts (
-    id              UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    booking_id      UUID         NOT NULL REFERENCES bookings(id),
-    received_by     UUID         NOT NULL REFERENCES users(id),
-    inbound_carrier VARCHAR(255) NOT NULL,
-    received_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
-    notes           TEXT         NOT NULL DEFAULT ''
-);
-
-CREATE TABLE goods_receipt_items (
-    id               UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
-    goods_receipt_id UUID          NOT NULL REFERENCES goods_receipts(id) ON DELETE CASCADE,
-    goods_item_id    UUID          NOT NULL REFERENCES goods_items(id),
-    expected_qty     DECIMAL(10,2) NOT NULL CHECK (expected_qty > 0),
-    received_qty     DECIMAL(10,2) NOT NULL CHECK (received_qty >= 0),
-    condition        VARCHAR(10)   NOT NULL CHECK (condition IN ('GOOD','DAMAGED','REJECTED')),
-    notes            TEXT          NOT NULL DEFAULT '',
-    UNIQUE (goods_receipt_id, goods_item_id)
-);
-
--- ============================================================
--- DELIVERY
--- ============================================================
-
-CREATE TABLE delivery_requests (
-    id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    booking_id          UUID        NOT NULL REFERENCES bookings(id),
-    customer_id         UUID        NOT NULL REFERENCES users(id),
-    destination_address VARCHAR(255) NOT NULL,
-    destination_city    VARCHAR(100) NOT NULL,
-    destination_country VARCHAR(100) NOT NULL,
-    requested_date      DATE        NOT NULL,
-    status              VARCHAR(20) NOT NULL CHECK (status IN ('PENDING','CONFIRMED','PICKING','DISPATCHED','DELIVERED','CANCELLED')),
-    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE TABLE delivery_request_items (
-    id                  UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
-    delivery_request_id UUID          NOT NULL REFERENCES delivery_requests(id) ON DELETE CASCADE,
-    goods_item_id       UUID          NOT NULL REFERENCES goods_items(id),
-    requested_qty       DECIMAL(10,2) NOT NULL CHECK (requested_qty > 0),
-    picked_qty          DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (picked_qty >= 0),
-    picked_by           UUID          REFERENCES users(id),
-    picked_at           TIMESTAMPTZ,
-    UNIQUE (delivery_request_id, goods_item_id)
-);
-
-CREATE TABLE delivery_notifications (
-    id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
-    delivery_request_id UUID        NOT NULL REFERENCES delivery_requests(id) ON DELETE CASCADE,
-    notified_by         UUID        NOT NULL REFERENCES users(id),
-    notified_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
-    status              VARCHAR(20) NOT NULL CHECK (status IN ('OPEN','CLAIMED','EXPIRED')),
-    expires_at          TIMESTAMPTZ NOT NULL
-);
-
-CREATE TABLE shipments (
-    id                      UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    delivery_request_id     UUID         NOT NULL REFERENCES delivery_requests(id),
-    claimed_by              UUID         NOT NULL REFERENCES users(id),
-    claimed_at              TIMESTAMPTZ  NOT NULL,
-    scheduled_pickup_time   TIMESTAMPTZ  NOT NULL,
-    tracking_number         VARCHAR(100) NOT NULL UNIQUE,
-    estimated_delivery_date DATE         NOT NULL,
-    actual_delivery_date    DATE,
-    status                  VARCHAR(20)  NOT NULL CHECK (status IN ('PENDING','PICKED_UP','IN_TRANSIT','DELIVERED')),
-    notes                   TEXT         NOT NULL DEFAULT '',
-    created_at              TIMESTAMPTZ  NOT NULL DEFAULT now(),
-    updated_at              TIMESTAMPTZ  NOT NULL DEFAULT now()
-);
-
-CREATE TABLE shipment_checkpoints (
-    id          UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    shipment_id UUID         NOT NULL REFERENCES shipments(id) ON DELETE CASCADE,
-    status      VARCHAR(20)  NOT NULL CHECK (status IN ('PENDING','PICKED_UP','IN_TRANSIT','DELIVERED')),
-    location    VARCHAR(255) NOT NULL,
-    note        TEXT         NOT NULL DEFAULT '',
-    recorded_at TIMESTAMPTZ  NOT NULL DEFAULT now()
-);
-
--- ============================================================
--- BILLING
--- ============================================================
+-- Billing (now same DB as bookings — real FK from invoices → bookings)
 
 CREATE TABLE invoices (
     id                  UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
-    customer_id         UUID          NOT NULL REFERENCES users(id),
-    warehouse_id        UUID          NOT NULL REFERENCES warehouses(id),
-    booking_id          UUID          REFERENCES bookings(id),
-    delivery_request_id UUID          REFERENCES delivery_requests(id),
+    customer_id         UUID          NOT NULL,   -- cross-service ref to identity_db.users
+    warehouse_id        UUID          NOT NULL,   -- cross-service ref to inventory_db.warehouses
+    booking_id          UUID          REFERENCES bookings(id),  -- real FK (same DB now)
+    delivery_request_id UUID,                     -- cross-service ref to delivery_db.delivery_requests
     invoice_type        VARCHAR(20)   NOT NULL CHECK (invoice_type IN ('BOOKING','DELIVERY')),
     amount              DECIMAL(10,2) NOT NULL CHECK (amount >= 0),
     currency            VARCHAR(3)    NOT NULL DEFAULT 'USD',
@@ -393,12 +323,73 @@ CREATE TABLE credit_notes (
 );
 
 -- ============================================================
--- NOTIFICATIONS
+-- DELIVERY SERVICE — delivery_db
+-- ============================================================
+
+CREATE TABLE delivery_requests (
+    id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    booking_id          UUID        NOT NULL,   -- cross-service ref to reservation_db.bookings
+    customer_id         UUID        NOT NULL,   -- cross-service ref to identity_db.users
+    destination_address VARCHAR(255) NOT NULL,
+    destination_city    VARCHAR(100) NOT NULL,
+    destination_country VARCHAR(100) NOT NULL,
+    requested_date      DATE        NOT NULL,
+    status              VARCHAR(20) NOT NULL CHECK (status IN ('PENDING','CONFIRMED','PICKING','DISPATCHED','DELIVERED','CANCELLED')),
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE delivery_request_items (
+    id                  UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+    delivery_request_id UUID          NOT NULL REFERENCES delivery_requests(id) ON DELETE CASCADE,
+    goods_item_id       UUID          NOT NULL,   -- cross-service ref to inventory_db.goods_items
+    requested_qty       DECIMAL(10,2) NOT NULL CHECK (requested_qty > 0),
+    picked_qty          DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (picked_qty >= 0),
+    picked_by           UUID,         -- cross-service ref to identity_db.users
+    picked_at           TIMESTAMPTZ,
+    UNIQUE (delivery_request_id, goods_item_id)
+);
+
+CREATE TABLE delivery_notifications (
+    id                  UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    delivery_request_id UUID        NOT NULL REFERENCES delivery_requests(id) ON DELETE CASCADE,
+    notified_by         UUID        NOT NULL,   -- cross-service ref to identity_db.users
+    notified_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+    status              VARCHAR(20) NOT NULL CHECK (status IN ('OPEN','CLAIMED','EXPIRED')),
+    expires_at          TIMESTAMPTZ NOT NULL
+);
+
+CREATE TABLE shipments (
+    id                      UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    delivery_request_id     UUID         NOT NULL REFERENCES delivery_requests(id),
+    claimed_by              UUID         NOT NULL,   -- cross-service ref to identity_db.users
+    claimed_at              TIMESTAMPTZ  NOT NULL,
+    scheduled_pickup_time   TIMESTAMPTZ  NOT NULL,
+    tracking_number         VARCHAR(100) NOT NULL UNIQUE,
+    estimated_delivery_date DATE         NOT NULL,
+    actual_delivery_date    DATE,
+    status                  VARCHAR(20)  NOT NULL CHECK (status IN ('PENDING','PICKED_UP','IN_TRANSIT','DELIVERED')),
+    notes                   TEXT         NOT NULL DEFAULT '',
+    created_at              TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    updated_at              TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+
+CREATE TABLE shipment_checkpoints (
+    id          UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    shipment_id UUID         NOT NULL REFERENCES shipments(id) ON DELETE CASCADE,
+    status      VARCHAR(20)  NOT NULL CHECK (status IN ('PENDING','PICKED_UP','IN_TRANSIT','DELIVERED')),
+    location    VARCHAR(255) NOT NULL,
+    note        TEXT         NOT NULL DEFAULT '',
+    recorded_at TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+
+-- ============================================================
+-- PLATFORM SERVICE — platform_db
 -- ============================================================
 
 CREATE TABLE notifications (
     id         UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id    UUID         NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id    UUID         NOT NULL,   -- cross-service ref to identity_db.users
     type       VARCHAR(50)  NOT NULL CHECK (type IN (
                    'WAREHOUSE_APPROVED',
                    'WAREHOUSE_REJECTED',
@@ -422,13 +413,9 @@ CREATE TABLE notifications (
     created_at TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
 
--- ============================================================
--- AUDIT
--- ============================================================
-
 CREATE TABLE audit_logs (
     id           UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    performed_by UUID         NOT NULL,
+    performed_by UUID         NOT NULL,   -- no FK — survives user deletion
     action       VARCHAR(100) NOT NULL,
     entity_type  VARCHAR(100) NOT NULL,
     entity_id    UUID         NOT NULL,
@@ -440,7 +427,7 @@ CREATE TABLE audit_logs (
 -- ============================================================
 -- OUTBOX (Transactional Outbox Pattern — one per service DB)
 -- Each service writes events to this table in the SAME
--- transaction as its business data. A poller reads pending
+-- transaction as its business data. Debezium CDC reads pending
 -- events and publishes them to Kafka, guaranteeing
 -- at-least-once delivery with no data inconsistency.
 -- ============================================================
@@ -459,24 +446,33 @@ CREATE TABLE outbox_events (
 CREATE INDEX idx_outbox_pending ON outbox_events(status) WHERE status = 'PENDING';
 
 -- ============================================================
--- INDEXES (PostgreSQL does NOT auto-create indexes on FK columns)
+-- INDEXES
 -- ============================================================
 
+-- Inventory
 CREATE INDEX idx_warehouses_owner_id ON warehouses(owner_id);
 CREATE INDEX idx_zones_warehouse_id ON zones(warehouse_id);
 CREATE INDEX idx_rooms_zone_id ON rooms(zone_id);
+CREATE INDEX idx_goods_items_import_id ON goods_items(goods_import_id);
+CREATE INDEX idx_goods_receipts_booking_id ON goods_receipts(booking_id);
+CREATE INDEX idx_goods_imports_booking ON goods_excel_imports(booking_id);
+CREATE INDEX idx_goods_imports_customer ON goods_excel_imports(customer_id);
+
+-- Reservation
 CREATE INDEX idx_bookings_customer_id ON bookings(customer_id);
 CREATE INDEX idx_bookings_warehouse_id ON bookings(warehouse_id);
 CREATE INDEX idx_bookings_room_id ON bookings(room_id);
 CREATE INDEX idx_bookings_zone_id ON bookings(zone_id);
-CREATE INDEX idx_goods_items_import_id ON goods_items(goods_import_id);
-CREATE INDEX idx_goods_receipts_booking_id ON goods_receipts(booking_id);
-CREATE INDEX idx_delivery_requests_booking_id ON delivery_requests(booking_id);
-CREATE INDEX idx_delivery_requests_customer_id ON delivery_requests(customer_id);
 CREATE INDEX idx_invoices_customer_id ON invoices(customer_id);
 CREATE INDEX idx_invoices_warehouse_id ON invoices(warehouse_id);
 CREATE INDEX idx_invoices_booking_id ON invoices(booking_id);
 CREATE INDEX idx_payments_invoice_id ON payments(invoice_id);
+
+-- Delivery
+CREATE INDEX idx_delivery_requests_booking_id ON delivery_requests(booking_id);
+CREATE INDEX idx_delivery_requests_customer_id ON delivery_requests(customer_id);
+
+-- Platform
 CREATE INDEX idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX idx_audit_logs_entity ON audit_logs(entity_type, entity_id);
 CREATE INDEX idx_audit_logs_performed_by ON audit_logs(performed_by);
